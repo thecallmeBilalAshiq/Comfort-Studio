@@ -49,14 +49,18 @@ Comfort-Studio/
 ## ⚙️ Configuration & Environment Variables
 
 ### Backend (`backend/.env`)
+
 Create a `.env` file inside the `backend/` directory:
+
 ```env
 PORT=5000
 FIREBASE_SERVICE_ACCOUNT_JSON= # Absolute path to your firebase-service-account.json file
 ```
 
 ### Frontend (`frontend/.env.local`)
+
 Create a `.env.local` file inside the `frontend/` directory:
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 # Firebase Client Config (for authentication)
@@ -73,7 +77,9 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ## 🚀 Setup & Installation Steps
 
 ### 1. Install Dependencies
+
 Install all modules for both packages:
+
 ```bash
 # Install backend dependencies
 cd backend
@@ -85,14 +91,18 @@ npm install
 ```
 
 ### 2. Database Seeding & Setup
+
 Run the seed script in the backend directory to initialize your SQLite database and populate it with premium category taxonomies, banners, users, and product catalogs:
+
 ```bash
 cd backend
 npm run seed
 ```
 
 ### 3. Run the Development Servers
+
 Start both servers concurrently to test and modify the code locally:
+
 ```bash
 # Run backend (in backend/ directory)
 npm run dev
@@ -100,10 +110,13 @@ npm run dev
 # Run frontend (in frontend/ directory)
 npm run dev
 ```
+
 The storefront client will be available at **`http://localhost:3000`** (or `http://localhost:3001` if port 3000 is occupied).
 
 ### 4. Build and Run in Production
+
 To test or deploy in production with optimized assets:
+
 ```bash
 # Build the production bundle
 cd frontend
@@ -113,14 +126,6 @@ npm run build
 npm run start
 ```
 
----
-
-## 🔑 Default Admin Account
-Use these credentials to log in to the administrator portal at `/admin` (or `/admin/login`):
-* **Email**: `numanasghar901@gmail.com`
-* **Password**: `admin123` (or authenticate using your verified Firebase Admin Account configuration)
-
----
-
 ## 📄 License
+
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
