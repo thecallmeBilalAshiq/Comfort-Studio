@@ -1,6 +1,34 @@
 import { Router } from 'express';
 import db from '../db';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    cb(null, path.join(__dirname, '..', '..', 'uploads'));
+  },
+  filename: (req: any, file, cb) => {
+    const orderId = req.params.id;
+    const ext = path.extname(file.originalname);
+    cb(null, `order-${orderId}-${Date.now()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const filetypes = /jpeg|jpg|png|webp/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only images (jpeg, jpg, png, webp) are allowed'));
+  }
+});
 
 function generateOrderNumber(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -81,6 +109,30 @@ router.post('/', authMiddleware, (req: AuthRequest, res) => {
     res.json({ ...order, items: orderItems });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/:id/screenshot', authMiddleware, upload.single('screenshot'), (req: AuthRequest, res) => {
+  try {
+    const orderId = req.params.id;
+    if (!req.file) {
+      return res.status(400).json({ error: 'No screenshot file provided' });
+    }
+
+    const order = db.prepare('SELECT * FROM orders WHERE id = ? AND userId = ?').get(orderId, req.user!.id) as any;
+    if (!order) {
+      if (req.file.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    const relativePath = `/uploads/${req.file.filename}`;
+    db.prepare('UPDATE orders SET paymentScreenshot = ? WHERE id = ?').run(relativePath, orderId);
+
+    res.json({ success: true, paymentScreenshot: relativePath });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

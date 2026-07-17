@@ -33,6 +33,24 @@ export const api = {
   getOrders: () => fetcher<any[]>('/api/orders'),
   createOrder: (items: { productId: number; quantity: number }[], shipping: any) => fetcher<any>('/api/orders', { method: 'POST', body: JSON.stringify({ items, shipping }) }),
   trackOrder: (orderNumber: string) => fetcher<any>(`/api/orders/track/${orderNumber}`),
+  uploadPaymentScreenshot: (orderId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('screenshot', file);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('cs_token') : null;
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return fetch(`${API}/api/orders/${orderId}/screenshot`, {
+      method: 'POST',
+      headers,
+      body: formData
+    }).then(async res => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+        throw new Error(err.error || 'Upload failed');
+      }
+      return res.json();
+    });
+  },
 
   getReviews: (productId: number) => fetcher<any>(`/api/reviews/${productId}`),
   submitReview: (productId: number, rating: number, comment: string) => fetcher<any>(`/api/reviews/${productId}`, { method: 'POST', body: JSON.stringify({ rating, comment }) }),

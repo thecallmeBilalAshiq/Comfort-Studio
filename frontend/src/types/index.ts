@@ -112,6 +112,7 @@ export interface Order {
   shippingZip: string;
   shippingCountry: string;
   createdAt: string;
+  paymentScreenshot?: string;
   items?: OrderItem[];
 }
 

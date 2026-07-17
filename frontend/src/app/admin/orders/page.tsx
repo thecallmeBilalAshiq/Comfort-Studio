@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
-import { ShoppingCart, ChevronDown } from 'lucide-react';
+import { ShoppingCart, ChevronDown, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { FadeIn } from '@/components/ScrollAnimations';
 
@@ -28,12 +28,102 @@ export default function AdminOrdersPage() {
     try { await api.admin.updateOrderStatus(id, status); setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o)); toast.success('Updated'); } catch { toast.error('Failed'); }
   };
 
+  const downloadExcel = () => {
+    if (filtered.length === 0) {
+      toast.error('No orders to export');
+      return;
+    }
+
+    const headers = [
+      'Order ID',
+      'Order Number',
+      'Customer Name',
+      'Customer Email',
+      'Created At',
+      'Status',
+      'Total Amount ($)',
+      'Items Detail',
+      'Shipping Recipient',
+      'Shipping Address',
+      'Shipping City',
+      'Shipping State',
+      'Shipping Zip',
+      'Shipping Email',
+      'Shipping Phone',
+      'Payment Screenshot Link'
+    ];
+
+    const rows = filtered.map(o => {
+      const itemsDetail = o.items ? o.items.map((item: any) => `${item.name} (Qty: ${item.quantity}, Price: $${Number(item.price).toFixed(2)})`).join('; ') : '';
+      const screenshotLink = o.paymentScreenshot ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${o.paymentScreenshot}` : '';
+
+      return [
+        o.id,
+        o.orderNumber || `Order #${o.id}`,
+        o.customerName,
+        o.customerEmail,
+        new Date(o.createdAt).toLocaleString(),
+        o.status,
+        Number(o.total).toFixed(2),
+        itemsDetail,
+        o.shippingName,
+        o.shippingAddress,
+        o.shippingCity,
+        o.shippingState,
+        o.shippingZip,
+        o.shippingEmail,
+        o.shippingPhone,
+        screenshotLink
+      ];
+    });
+
+    const escapeCSV = (val: any) => {
+      if (val === null || val === undefined) return '';
+      let str = String(val);
+      str = str.replace(/"/g, '""');
+      if (str.includes(',') || str.includes('\n') || str.includes('"') || str.includes(';')) {
+        return `"${str}"`;
+      }
+      return str;
+    };
+
+    const csvContent = [
+      headers.map(escapeCSV).join(','),
+      ...rows.map(row => row.map(escapeCSV).join(','))
+    ].join('\r\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Excel sheet downloaded!');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       <FadeIn>
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-3"><ShoppingCart size={28} className="text-accent" /><h1 className="font-display text-3xl font-bold">Orders</h1></div>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input-modern w-auto"><option value="">All Status</option>{statuses.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}</select>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+            <ShoppingCart size={28} className="text-accent" />
+            <h1 className="font-display text-3xl font-bold">Orders</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={downloadExcel} 
+              className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition shadow-lg shadow-green-600/10 shrink-0"
+            >
+              <Download size={16} /> Export to Excel
+            </button>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input-modern w-auto">
+              <option value="">All Status</option>
+              {statuses.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+            </select>
+          </div>
         </div>
       </FadeIn>
 

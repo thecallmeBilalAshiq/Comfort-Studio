@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -12,7 +12,13 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  if (user?.isAdmin) { router.push('/admin'); return null; }
+  useEffect(() => {
+    if (user?.isAdmin) {
+      router.push('/admin');
+    }
+  }, [user, router]);
+
+  if (user?.isAdmin) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -29,6 +29,19 @@ function ShopContent() {
   }, []);
 
   useEffect(() => {
+    setFilters({
+      search: searchParams.get('search') || '',
+      category: searchParams.get('category') || '',
+      subcategory: searchParams.get('subcategory') || '',
+      sort: searchParams.get('sort') || '',
+      badge: searchParams.get('badge') || '',
+      minPrice: searchParams.get('minPrice') || '',
+      maxPrice: searchParams.get('maxPrice') || '',
+      inStock: searchParams.get('inStock') || '',
+    });
+  }, [searchParams]);
+
+  useEffect(() => {
     setLoading(true);
     const params: Record<string, string> = {};
     Object.entries(filters).forEach(([k, v]) => { if (v) params[k] = v; });

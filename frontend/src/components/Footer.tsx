@@ -19,8 +19,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
-            <Link href="/" className="font-display text-2xl font-bold">
-              Comfort <span className="text-accent">Studio</span>
+            <Link href="/" className="flex items-center gap-2.5 font-display text-2xl font-bold">
+              <img 
+                src="https://res.cloudinary.com/iqtgqdjs/image/upload/v1784311113/Logo_jnlebq.jpg" 
+                alt="Comfort Studio Logo" 
+                className="w-8 h-8 rounded-full object-cover border border-white/20 shrink-0"
+              />
+              <span>Comfort <span className="text-accent">Studio</span></span>
             </Link>
             <p className="mt-4 text-sm text-gray-400 leading-relaxed">
               {footer?.tagline || 'Transforming houses into homes with premium furniture that combines style, comfort, and quality craftsmanship.'}

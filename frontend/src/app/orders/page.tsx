@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Package, ChevronDown, Copy, ExternalLink } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Order } from '@/types';
@@ -19,15 +20,33 @@ const statusColors: Record<string, string> = {
 const statusSteps = ['pending', 'processing', 'shipped', 'delivered'];
 
 export default function OrdersPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<Record<number, File>>({});
+  const [uploadingOrderIds, setUploadingOrderIds] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
-    if (!user) return;
+    if (user && !user.emailVerified) {
+      router.replace('/verify-email?redirect=orders');
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    if (!user || !user.emailVerified) return;
     api.getOrders().then(setOrders).catch(() => {}).finally(() => setLoading(false));
   }, [user]);
+
+  if (user && !user.emailVerified) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent"></div>
+      </div>
+    );
+  }
+
 
   if (!user) {
     return (
@@ -139,10 +158,94 @@ export default function OrdersPage() {
                       </div>
                     )}
 
-                    <div className="bg-white rounded-xl p-4 text-sm">
-                      <p className="font-medium mb-1">Shipping Address</p>
-                      <p className="text-gray-600">{order.shippingName}</p>
-                      <p className="text-gray-500">{order.shippingAddress}, {order.shippingCity}, {order.shippingState} {order.shippingZip}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white rounded-xl p-4 text-sm">
+                        <p className="font-medium mb-1 text-[#5d4037]">Shipping Address</p>
+                        <p className="text-gray-600">{order.shippingName}</p>
+                        <p className="text-gray-500">{order.shippingAddress}, {order.shippingCity}, {order.shippingState} {order.shippingZip}</p>
+                        <p className="text-gray-500 mt-1">{order.shippingPhone}</p>
+                      </div>
+
+                      <div className="bg-white rounded-xl p-4 text-sm space-y-3">
+                        <p className="font-medium text-[#5d4037]">Payment Proof Receipt</p>
+                        
+                        {order.paymentScreenshot ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-1.5 text-green-700 text-xs font-bold bg-green-50 p-2.5 rounded-lg border border-green-200">
+                              <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                              Payment Proof Submitted
+                            </div>
+                            <div className="relative aspect-[4/3] max-w-[200px] border rounded-lg overflow-hidden bg-gray-100 mt-2">
+                              <img 
+                                src={order.paymentScreenshot.startsWith('http') ? order.paymentScreenshot : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${order.paymentScreenshot}`} 
+                                alt="Payment proof receipt" 
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-1.5 text-yellow-700 text-xs font-bold bg-yellow-50 p-2.5 rounded-lg border border-yellow-200">
+                              <span className="w-2 h-2 rounded-full bg-yellow-500 animate-pulse" />
+                              Awaiting Payment Proof
+                            </div>
+                            
+                            <div className="bg-[#faf7f4] border border-accent/15 p-3 rounded-lg text-xs space-y-1.5">
+                              <p className="font-bold text-[#8d6e63]">ABL: 0123-4567-8910-1112</p>
+                              <p className="text-gray-400">Holder: Comfort Studio</p>
+                            </div>
+
+                            <div className="space-y-2">
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    setSelectedFiles(prev => ({ ...prev, [order.id]: file }));
+                                  }
+                                }}
+                                className="file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-accent/10 file:text-accent text-[10px] text-gray-500 cursor-pointer w-full"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const file = selectedFiles[order.id];
+                                    if (!file) {
+                                      toast.error('Please choose a file first');
+                                      return;
+                                    }
+                                    setUploadingOrderIds(prev => ({ ...prev, [order.id]: true }));
+                                    try {
+                                      const res = await api.uploadPaymentScreenshot(order.id, file);
+                                      toast.success('Payment receipt uploaded successfully!');
+                                      setOrders(prevOrders => prevOrders.map(o => o.id === order.id ? { ...o, paymentScreenshot: res.paymentScreenshot } : o));
+                                    } catch (err: any) {
+                                      toast.error(err.message || 'Upload failed');
+                                    } finally {
+                                      setUploadingOrderIds(prev => ({ ...prev, [order.id]: false }));
+                                    }
+                                  }}
+                                  disabled={uploadingOrderIds[order.id] || !selectedFiles[order.id]}
+                                  className="btn-primary py-1 px-3 text-[10px] disabled:opacity-50"
+                                >
+                                  {uploadingOrderIds[order.id] ? 'Uploading...' : 'Submit Screenshot'}
+                                </button>
+                                
+                                <a 
+                                  href={`https://wa.me/447983630088?text=${encodeURIComponent(`Hello Comfort Studio, here is my payment proof for order *${order.orderNumber || `#${order.id}`}* totaling *$${Number(order.total).toFixed(2)}*.`)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 py-1 px-3 rounded bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-[10px]"
+                                >
+                                  WhatsApp Proof
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

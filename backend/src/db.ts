@@ -43,6 +43,18 @@ export async function initDB() {
   db.run('PRAGMA journal_mode = WAL');
   db.run('PRAGMA foreign_keys = ON');
 
+
+  db.run(`
+  CREATE TABLE IF NOT EXISTS wishlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER NOT NULL,
+    productId INTEGER NOT NULL,
+    FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
+  )
+`);
+
+
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -209,6 +221,7 @@ export async function initDB() {
 
   try { db.run("ALTER TABLE banners ADD COLUMN image TEXT DEFAULT ''"); } catch {}
   try { db.run("ALTER TABLE orders ADD COLUMN orderNumber TEXT"); } catch {}
+  try { db.run("ALTER TABLE orders ADD COLUMN paymentScreenshot TEXT DEFAULT ''"); } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'local'"); } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''"); } catch {}
 
