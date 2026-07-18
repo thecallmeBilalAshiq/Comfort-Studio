@@ -11,6 +11,7 @@ frontend/tsconfig.tsbuildinfo
 backend/.env
 frontend/.env.local
 backend/firebase-service-account.json
+frontend/firebase-service-account.json
 
 # SQLite database files
 backend/data/*.db
