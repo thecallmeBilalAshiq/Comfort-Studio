@@ -21,9 +21,29 @@ async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string> || {}) };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API}${url}`, { ...options, headers });
+  let res = await fetch(`${API}${url}`, { ...options, headers });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }));
+    const isTokenExpired = res.status === 401 || 
+                           (err.error && (
+                             err.error.includes('auth/id-token-expired') || 
+                             err.error.includes('expired') || 
+                             err.error.includes('Token expired')
+                           ));
+    if (isTokenExpired && typeof window !== 'undefined' && auth.currentUser) {
+      console.warn('Token expired. Forcing refresh and retrying...');
+      try {
+        const freshToken = await auth.currentUser.getIdToken(true);
+        localStorage.setItem('cs_token', freshToken);
+        headers['Authorization'] = `Bearer ${freshToken}`;
+        res = await fetch(`${API}${url}`, { ...options, headers });
+        if (res.ok) {
+          return res.json();
+        }
+      } catch (refreshErr) {
+        console.error('Failed to force refresh token during retry:', refreshErr);
+      }
+    }
     throw new Error(err.error || 'Request failed');
   }
   return res.json();
@@ -55,17 +75,38 @@ export const api = {
     const token = await getAuthToken();
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    return fetch(`${API}/api/orders/${orderId}/screenshot`, {
+    let res = await fetch(`${API}/api/orders/${orderId}/screenshot`, {
       method: 'POST',
       headers,
       body: formData
-    }).then(async res => {
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: 'Upload failed' }));
-        throw new Error(err.error || 'Upload failed');
-      }
-      return res.json();
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+      const isTokenExpired = res.status === 401 || 
+                             (err.error && (
+                               err.error.includes('auth/id-token-expired') || 
+                               err.error.includes('expired') || 
+                               err.error.includes('Token expired')
+                             ));
+      if (isTokenExpired && typeof window !== 'undefined' && auth.currentUser) {
+        console.warn('Token expired during upload. Forcing refresh and retrying...');
+        try {
+          const freshToken = await auth.currentUser.getIdToken(true);
+          localStorage.setItem('cs_token', freshToken);
+          headers['Authorization'] = `Bearer ${freshToken}`;
+          res = await fetch(`${API}/api/orders/${orderId}/screenshot`, {
+            method: 'POST',
+            headers,
+            body: formData
+          });
+          if (res.ok) return res.json();
+        } catch (refreshErr) {
+          console.error('Failed to refresh token during upload retry:', refreshErr);
+        }
+      }
+      throw new Error(err.error || 'Upload failed');
+    }
+    return res.json();
   },
 
   getReviews: (productId: number) => fetcher<any>(`/api/reviews/${productId}`),
