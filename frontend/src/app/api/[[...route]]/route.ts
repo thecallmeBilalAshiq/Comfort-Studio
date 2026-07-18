@@ -65,7 +65,7 @@ function mapCategory(c: any) {
     slug: c.slug,
     image: c.image || '',
     createdAt: c.created_at,
-    subcategories: c.subcategories?.map((s: any) => ({ name: s.name, slug: s.slug })) || []
+    subcategories: c.subcategories?.map((s: any) => ({ id: s.id, name: s.name, slug: s.slug })) || []
   };
 }
 
@@ -141,6 +141,7 @@ function mapReview(r: any) {
   return {
     id: r.id,
     productId: r.product_id,
+    productName: r.products?.name || 'Product',
     userId: r.user_id,
     userName: r.user_name || 'Customer',
     rating: Number(r.rating),
@@ -156,6 +157,8 @@ function mapOrder(o: any) {
   return {
     id: o.id,
     userId: o.user_id,
+    customerName: o.users?.name || o.shipping_name || 'Customer',
+    customerEmail: o.users?.email || o.shipping_email || '',
     orderNumber: o.order_number,
     total: Number(o.total),
     shipping: Number(o.shipping || 0),
@@ -175,6 +178,9 @@ function mapOrder(o: any) {
       productId: item.product_id,
       productName: item.products?.name || 'Product',
       productImage: item.products?.image || '',
+      name: item.products?.name || 'Product',
+      image: item.products?.image || '',
+      slug: item.products?.slug || '',
       quantity: Number(item.quantity),
       price: Number(item.price)
     })) || []
@@ -339,14 +345,33 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
 
   // GET /api/categories
   if (pathSegments[0] === 'categories') {
-    // In Supabase, categories has subcategories related via category_id
-    const { data, error } = await supabase
+    const { data: cats, error: catsErr } = await supabase
       .from('categories')
-      .select('*, subcategories(name, slug)')
+      .select('*, subcategories(id, name, slug)')
       .order('name');
       
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data.map(mapCategory));
+    if (catsErr) return NextResponse.json({ error: catsErr.message }, { status: 500 });
+
+    const { data: countData, error: countErr } = await supabase
+      .from('products')
+      .select('category_id');
+      
+    const countMap: Record<number, number> = {};
+    if (!countErr && countData) {
+      countData.forEach((p: any) => {
+        if (p.category_id) {
+          countMap[p.category_id] = (countMap[p.category_id] || 0) + 1;
+        }
+      });
+    }
+
+    const mapped = (cats || []).map((c: any) => {
+      const mappedCat = mapCategory(c) as any;
+      mappedCat.productCount = countMap[c.id] || 0;
+      return mappedCat;
+    });
+
+    return NextResponse.json(mapped);
   }
 
   // GET /api/banners
@@ -387,13 +412,35 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
   if (pathSegments[0] === 'auth' && pathSegments[1] === 'me') {
     try {
       const user = await authenticate(req);
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', user.id)
         .maybeSingle();
         
       if (error) throw error;
+
+      if (!data) {
+        const { data: newUser, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: user.id,
+            name: user.name || user.email.split('@')[0] || 'Customer',
+            email: user.email.toLowerCase(),
+            is_admin: user.isAdmin || false,
+            provider: 'firebase',
+            avatar: ''
+          })
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.error('Failed to auto-create user in Supabase:', insertError);
+        } else {
+          data = newUser;
+        }
+      }
+
       return NextResponse.json(data ? mapUser(data) : user);
     } catch (e: any) {
       return NextResponse.json({ error: e.message }, { status: 401 });
@@ -480,20 +527,41 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
 
       if (sub === 'stats') {
         const { count: pCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
-        const { count: uCount } = await supabase.from('users').select('*', { count: 'exact', head: true });
-        const { data: oData } = await supabase.from('orders').select('total');
+        const { count: uCount } = await supabase.from('users').select('*', { count: 'exact', head: true }).eq('is_admin', false);
+        const { count: oCount } = await supabase.from('orders').select('*', { count: 'exact', head: true });
+        const { count: pendingCount } = await supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending');
+        const { count: catCount } = await supabase.from('categories').select('*', { count: 'exact', head: true });
+        const { count: reviewCount } = await supabase.from('reviews').select('*', { count: 'exact', head: true });
         
-        const orders = oData || [];
-        const ordersCount = orders.length;
-        const totalRevenue = orders.reduce((sum: number, order: any) => sum + (Number(order.total) || 0), 0);
-        
+        const { data: revenueData } = await supabase.from('orders').select('total');
+        const totalRevenue = (revenueData || []).reduce((sum: number, o: any) => sum + (Number(o.total) || 0), 0);
+
+        const { data: ratingData } = await supabase.from('reviews').select('rating');
+        const totalRating = (ratingData || []).reduce((sum: number, r: any) => sum + (Number(r.rating) || 0), 0);
+        const avgRating = ratingData && ratingData.length > 0 ? (totalRating / ratingData.length) : 0;
+
+        const { data: recentOrdersData } = await supabase
+          .from('orders')
+          .select('*, users(name)')
+          .order('created_at', { ascending: false })
+          .limit(5);
+
         return NextResponse.json({
-          stats: {
-            products: pCount || 0,
-            orders: ordersCount,
-            revenue: parseFloat(totalRevenue.toFixed(2)),
-            users: uCount || 0
-          }
+          totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+          totalProducts: pCount || 0,
+          totalOrders: oCount || 0,
+          totalUsers: uCount || 0,
+          pendingOrders: pendingCount || 0,
+          totalCategories: catCount || 0,
+          totalReviews: reviewCount || 0,
+          avgRating: parseFloat(avgRating.toFixed(1)),
+          recentOrders: (recentOrdersData || []).map((o: any) => ({
+            id: o.id,
+            customerName: o.users?.name || o.shipping_name || 'Customer',
+            total: Number(o.total),
+            status: o.status,
+            createdAt: o.created_at
+          }))
         });
       }
 
@@ -507,27 +575,90 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
       }
 
       if (sub === 'categories') {
-        const { data, error } = await supabase.from('categories').select('*').order('name');
-        if (error) throw error;
-        return NextResponse.json(data.map(mapCategory));
+        const { data: cats, error: catsErr } = await supabase
+          .from('categories')
+          .select('*, subcategories(id, name, slug)')
+          .order('name');
+        if (catsErr) throw catsErr;
+
+        const { data: countData, error: countErr } = await supabase
+          .from('products')
+          .select('category_id');
+        if (countErr) throw countErr;
+
+        const countMap: Record<number, number> = {};
+        if (countData) {
+          countData.forEach((p: any) => {
+            if (p.category_id) {
+              countMap[p.category_id] = (countMap[p.category_id] || 0) + 1;
+            }
+          });
+        }
+
+        const mapped = (cats || []).map((c: any) => {
+          const mappedCat = mapCategory(c) as any;
+          mappedCat.productCount = countMap[c.id] || 0;
+          return mappedCat;
+        });
+
+        return NextResponse.json(mapped);
       }
 
       if (sub === 'orders') {
-        const { data, error } = await supabase.from('orders').select('*, order_items(*, products(*))').order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*, order_items(*, products(*)), users(name, email)')
+          .order('created_at', { ascending: false });
         if (error) throw error;
         return NextResponse.json(data.map(mapOrder));
       }
 
       if (sub === 'reviews') {
-        const { data, error } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('reviews')
+          .select('*, products(name)')
+          .order('created_at', { ascending: false });
         if (error) throw error;
         return NextResponse.json(data.map(mapReview));
       }
 
       if (sub === 'users') {
-        const { data, error } = await supabase.from('users').select('*').order('name');
-        if (error) throw error;
-        return NextResponse.json(data.map(mapUser));
+        const { data: usersData, error: uErr } = await supabase
+          .from('users')
+          .select('*')
+          .eq('is_admin', false)
+          .order('created_at', { ascending: false });
+        if (uErr) throw uErr;
+
+        const { data: ordersData } = await supabase.from('orders').select('user_id');
+        const { data: reviewsData } = await supabase.from('reviews').select('user_id');
+
+        const orderCountMap: Record<string, number> = {};
+        if (ordersData) {
+          ordersData.forEach((o: any) => {
+            if (o.user_id) {
+              orderCountMap[o.user_id] = (orderCountMap[o.user_id] || 0) + 1;
+            }
+          });
+        }
+
+        const reviewCountMap: Record<string, number> = {};
+        if (reviewsData) {
+          reviewsData.forEach((r: any) => {
+            if (r.user_id) {
+              reviewCountMap[r.user_id] = (reviewCountMap[r.user_id] || 0) + 1;
+            }
+          });
+        }
+
+        const mapped = (usersData || []).map((u: any) => {
+          const mappedUser = mapUser(u) as any;
+          mappedUser.orderCount = orderCountMap[u.id] || 0;
+          mappedUser.reviewCount = reviewCountMap[u.id] || 0;
+          return mappedUser;
+        });
+
+        return NextResponse.json(mapped);
       }
 
       if (sub === 'banners') {
