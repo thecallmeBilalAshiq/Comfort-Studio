@@ -4,6 +4,13 @@ const API = process.env.NEXT_PUBLIC_API_URL || (typeof window === 'undefined' ? 
 
 async function getAuthToken(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
+  if (!auth.currentUser) {
+    try {
+      await auth.authStateReady();
+    } catch (err) {
+      console.warn('Failed to wait for Firebase auth state ready:', err);
+    }
+  }
   if (auth.currentUser) {
     try {
       const token = await auth.currentUser.getIdToken();
@@ -30,19 +37,36 @@ async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
                              err.error.includes('expired') || 
                              err.error.includes('Token expired')
                            ));
-    if (isTokenExpired && typeof window !== 'undefined' && auth.currentUser) {
-      console.warn('Token expired. Forcing refresh and retrying...');
+    if (isTokenExpired && typeof window !== 'undefined') {
       try {
-        const freshToken = await auth.currentUser.getIdToken(true);
-        localStorage.setItem('cs_token', freshToken);
-        headers['Authorization'] = `Bearer ${freshToken}`;
-        res = await fetch(`${API}${url}`, { ...options, headers });
-        if (res.ok) {
-          return res.json();
+        await auth.authStateReady();
+      } catch (e) {}
+      if (auth.currentUser) {
+        console.warn('Token expired. Forcing refresh and retrying...');
+        try {
+          const freshToken = await auth.currentUser.getIdToken(true);
+          localStorage.setItem('cs_token', freshToken);
+          headers['Authorization'] = `Bearer ${freshToken}`;
+          res = await fetch(`${API}${url}`, { ...options, headers });
+          if (res.ok) {
+            return res.json();
+          }
+        } catch (refreshErr) {
+          console.error('Failed to force refresh token during retry:', refreshErr);
         }
-      } catch (refreshErr) {
-        console.error('Failed to force refresh token during retry:', refreshErr);
       }
+      
+      // If we got here, it means we couldn't refresh the token, or the retried request also failed.
+      // We should log out the user so they can log back in.
+      console.warn('Authentication session expired. Logging out...');
+      localStorage.removeItem('cs_token');
+      try {
+        await auth.signOut();
+      } catch (e) {}
+      
+      // Redirect to /auth page
+      window.location.href = `/auth?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+      throw new Error('Your session has expired. Please sign in again.');
     }
     throw new Error(err.error || 'Request failed');
   }
@@ -88,21 +112,34 @@ export const api = {
                                err.error.includes('expired') || 
                                err.error.includes('Token expired')
                              ));
-      if (isTokenExpired && typeof window !== 'undefined' && auth.currentUser) {
-        console.warn('Token expired during upload. Forcing refresh and retrying...');
+      if (isTokenExpired && typeof window !== 'undefined') {
         try {
-          const freshToken = await auth.currentUser.getIdToken(true);
-          localStorage.setItem('cs_token', freshToken);
-          headers['Authorization'] = `Bearer ${freshToken}`;
-          res = await fetch(`${API}/api/orders/${orderId}/screenshot`, {
-            method: 'POST',
-            headers,
-            body: formData
-          });
-          if (res.ok) return res.json();
-        } catch (refreshErr) {
-          console.error('Failed to refresh token during upload retry:', refreshErr);
+          await auth.authStateReady();
+        } catch (e) {}
+        if (auth.currentUser) {
+          console.warn('Token expired during upload. Forcing refresh and retrying...');
+          try {
+            const freshToken = await auth.currentUser.getIdToken(true);
+            localStorage.setItem('cs_token', freshToken);
+            headers['Authorization'] = `Bearer ${freshToken}`;
+            res = await fetch(`${API}/api/orders/${orderId}/screenshot`, {
+              method: 'POST',
+              headers,
+              body: formData
+            });
+            if (res.ok) return res.json();
+          } catch (refreshErr) {
+            console.error('Failed to refresh token during upload retry:', refreshErr);
+          }
         }
+        
+        console.warn('Authentication session expired during upload. Logging out...');
+        localStorage.removeItem('cs_token');
+        try {
+          await auth.signOut();
+        } catch (e) {}
+        window.location.href = `/auth?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        throw new Error('Your session has expired. Please sign in again.');
       }
       throw new Error(err.error || 'Upload failed');
     }
