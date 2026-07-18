@@ -1,7 +1,23 @@
+import { auth } from '@/lib/firebase';
+
 const API = process.env.NEXT_PUBLIC_API_URL || (typeof window === 'undefined' ? 'http://localhost:3000' : '');
 
+async function getAuthToken(): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+  if (auth.currentUser) {
+    try {
+      const token = await auth.currentUser.getIdToken();
+      localStorage.setItem('cs_token', token);
+      return token;
+    } catch (err) {
+      console.warn('Failed to refresh Firebase token:', err);
+    }
+  }
+  return localStorage.getItem('cs_token');
+}
+
 async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('cs_token') : null;
+  const token = await getAuthToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(options?.headers as Record<string, string> || {}) };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -33,10 +49,10 @@ export const api = {
   getOrders: () => fetcher<any[]>('/api/orders'),
   createOrder: (items: { productId: number; quantity: number }[], shipping: any) => fetcher<any>('/api/orders', { method: 'POST', body: JSON.stringify({ items, shipping }) }),
   trackOrder: (orderNumber: string) => fetcher<any>(`/api/orders/track/${orderNumber}`),
-  uploadPaymentScreenshot: (orderId: number, file: File) => {
+  uploadPaymentScreenshot: async (orderId: number, file: File) => {
     const formData = new FormData();
     formData.append('screenshot', file);
-    const token = typeof window !== 'undefined' ? localStorage.getItem('cs_token') : null;
+    const token = await getAuthToken();
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
     return fetch(`${API}/api/orders/${orderId}/screenshot`, {
