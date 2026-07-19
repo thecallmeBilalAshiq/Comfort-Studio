@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../db';
-import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { authMiddleware, optionalAuthMiddleware, AuthRequest } from '../middleware/auth';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -63,7 +63,7 @@ router.get('/track/:orderNumber', (req, res) => {
   res.json(order);
 });
 
-router.post('/', authMiddleware, (req: AuthRequest, res) => {
+router.post('/', optionalAuthMiddleware, (req: AuthRequest, res) => {
   try {
     const { items, shipping } = req.body;
     if (!items || items.length === 0) return res.status(400).json({ error: 'Cart is empty' });
@@ -87,7 +87,7 @@ router.post('/', authMiddleware, (req: AuthRequest, res) => {
     }
 
     const orderResult = db.prepare(`INSERT INTO orders (userId, orderNumber, total, shipping, shippingName, shippingEmail, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, shippingCountry) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      req.user!.id, orderNumber, total, shippingCost,
+      req.user?.id || null, orderNumber, total, shippingCost,
       `${shipping.firstName} ${shipping.lastName}`, shipping.email, shipping.phone,
       shipping.address, shipping.city, shipping.state, shipping.zip, shipping.country || 'United States'
     );
@@ -102,7 +102,9 @@ router.post('/', authMiddleware, (req: AuthRequest, res) => {
       updateStock.run(item.quantity, item.productId);
     }
 
-    db.prepare('DELETE FROM cart WHERE userId = ?').run(req.user!.id);
+    if (req.user) {
+      db.prepare('DELETE FROM cart WHERE userId = ?').run(req.user.id);
+    }
 
     const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(orderId);
     const orderItems = db.prepare(`SELECT oi.*, p.name, p.image, p.slug FROM order_items oi JOIN products p ON oi.productId = p.id WHERE oi.orderId = ?`).all(orderId);
@@ -112,14 +114,20 @@ router.post('/', authMiddleware, (req: AuthRequest, res) => {
   }
 });
 
-router.post('/:id/screenshot', authMiddleware, upload.single('screenshot'), (req: AuthRequest, res) => {
+router.post('/:id/screenshot', optionalAuthMiddleware, upload.single('screenshot'), (req: AuthRequest, res) => {
   try {
     const orderId = req.params.id;
     if (!req.file) {
       return res.status(400).json({ error: 'No screenshot file provided' });
     }
 
-    const order = db.prepare('SELECT * FROM orders WHERE id = ? AND userId = ?').get(orderId, req.user!.id) as any;
+    let order: any;
+    if (req.user) {
+      order = db.prepare('SELECT * FROM orders WHERE id = ? AND userId = ?').get(orderId, req.user.id);
+    } else {
+      order = db.prepare('SELECT * FROM orders WHERE id = ? AND userId IS NULL').get(orderId);
+    }
+
     if (!order) {
       if (req.file.path && fs.existsSync(req.file.path)) {
         fs.unlinkSync(req.file.path);

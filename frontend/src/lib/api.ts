@@ -92,7 +92,7 @@ export const api = {
 
   getOrders: () => fetcher<any[]>('/api/orders'),
   createOrder: (items: { productId: number; quantity: number }[], shipping: any) => fetcher<any>('/api/orders', { method: 'POST', body: JSON.stringify({ items, shipping }) }),
-  trackOrder: (orderNumber: string) => fetcher<any>(`/api/orders/track/${orderNumber}`),
+  trackOrder: (orderNumber: string, email: string) => fetcher<any>(`/api/orders/track/${orderNumber}?email=${encodeURIComponent(email)}`),
   uploadPaymentScreenshot: async (orderId: number, file: File) => {
     const formData = new FormData();
     formData.append('screenshot', file);
@@ -167,6 +167,7 @@ export const api = {
     updateCategory: (id: number, data: any) => fetcher<any>(`/api/admin/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteCategory: (id: number) => fetcher<any>(`/api/admin/categories/${id}`, { method: 'DELETE' }),
     getOrders: () => fetcher<any[]>('/api/admin/orders'),
+    createOrder: (data: any) => fetcher<any>('/api/admin/orders', { method: 'POST', body: JSON.stringify(data) }),
     updateOrderStatus: (id: number, status: string) => fetcher<any>(`/api/admin/orders/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }),
     getReviews: () => fetcher<any[]>('/api/admin/reviews'),
     replyReview: (id: number, adminReply: string) => fetcher<any>(`/api/admin/reviews/${id}`, { method: 'PUT', body: JSON.stringify({ adminReply }) }),

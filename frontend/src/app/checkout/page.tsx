@@ -177,7 +177,11 @@ export default function CheckoutPage() {
           </div>
 
           <div className="pt-4 border-t flex justify-center gap-4">
-            <Link href="/orders" className="btn-secondary text-xs">View My Orders</Link>
+            {user ? (
+              <Link href="/orders" className="btn-secondary text-xs">View My Orders</Link>
+            ) : (
+              <Link href="/orders" className="btn-secondary text-xs">Track Order</Link>
+            )}
             <Link href="/shop" className="btn-secondary text-xs">Continue Shopping</Link>
           </div>
         </div>
@@ -187,7 +191,6 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) { toast.error('Please sign in'); return; }
     setLoading(true);
     try {
       const result = await api.createOrder(

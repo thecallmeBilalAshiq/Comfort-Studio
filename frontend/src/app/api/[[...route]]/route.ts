@@ -94,6 +94,23 @@ async function authenticateAdmin(req: Request) {
   return user;
 }
 
+async function authenticateOptional(req: Request) {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  const token = authHeader.split(' ')[1];
+  if (!token || token === 'null' || token === 'undefined') {
+    return null;
+  }
+  try {
+    return await authenticate(req);
+  } catch (error) {
+    console.warn('[Optional Authentication Fallback]: Proceeding as guest due to validation error:', error);
+    return null;
+  }
+}
+
 // ----------------------------------------------------
 // DATA MAPPING HELPERS
 // ----------------------------------------------------
@@ -522,6 +539,12 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
     // GET /api/orders/track/:orderNumber
     if (pathSegments[1] === 'track' && pathSegments[2]) {
       const orderNumber = pathSegments[2];
+      const email = searchParams.get('email')?.trim().toLowerCase();
+      
+      if (!email) {
+        return NextResponse.json({ error: 'Email parameter is required to track this order' }, { status: 400 });
+      }
+
       const { data, error } = await supabase
         .from('orders')
         .select('*, order_items(*, products(*))')
@@ -530,6 +553,12 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
         
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       if (!data) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+
+      const orderEmail = (data.shipping_email || '').trim().toLowerCase();
+      if (orderEmail !== email) {
+        return NextResponse.json({ error: 'Order found, but email address does not match' }, { status: 403 });
+      }
+
       return NextResponse.json(mapOrder(data));
     }
 
@@ -855,7 +884,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
 
     // POST /api/orders (Create new order)
     try {
-      const user = await authenticate(req);
+      const user = await authenticateOptional(req);
       const { items, shipping } = await req.json();
       if (!items || items.length === 0) return NextResponse.json({ error: 'No items in order' }, { status: 400 });
 
@@ -898,13 +927,13 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
       const { data: newOrder, error: oErr } = await supabase
         .from('orders')
         .insert({
-          user_id: user.id,
+          user_id: user?.id || null,
           order_number: orderNumber,
           total,
           shipping: shippingCost,
           status: 'pending',
-          shipping_name: shipping.name || user.name || '',
-          shipping_email: shipping.email || user.email || '',
+          shipping_name: shipping.name || user?.name || 'Guest',
+          shipping_email: shipping.email || user?.email || '',
           shipping_phone: shipping.phone || '',
           shipping_address: shipping.address || '',
           shipping_city: shipping.city || '',
@@ -926,8 +955,10 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
       const { error: itemsErr } = await supabase.from('order_items').insert(itemsWithOrderId);
       if (itemsErr) throw itemsErr;
 
-      // Clear user cart in Supabase
-      await supabase.from('cart').delete().eq('user_id', user.id);
+      // Clear user cart in Supabase (only if logged in)
+      if (user?.id) {
+        await supabase.from('cart').delete().eq('user_id', user.id);
+      }
 
       // Return order mapped back to JS camelCase
       const { data: finalOrder, error: finalErr } = await supabase

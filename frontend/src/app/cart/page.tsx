@@ -63,13 +63,9 @@ export default function CartPage() {
               {shipping > 0 && <p className="text-xs text-green-600">Add ${(500 - total).toFixed(2)} more for free shipping</p>}
               <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="font-bold text-lg">${(total + shipping).toFixed(2)}</span></div>
             </div>
-            {user ? (
-              <Link href="/checkout" className="mt-6 block w-full py-3 bg-accent text-white rounded-lg font-medium text-center hover:bg-accent-hover transition">Proceed to Checkout</Link>
-            ) : (
-              <div className="mt-6 space-y-2">
-                <Link href="/auth?redirect=checkout" className="block w-full py-3 bg-accent text-white rounded-lg font-medium text-center hover:bg-accent-hover transition">Sign In to Checkout</Link>
-                <p className="text-xs text-gray-500 text-center">You need an account to place an order</p>
-              </div>
+            <Link href="/checkout" className="mt-6 block w-full py-3 bg-accent text-white rounded-lg font-medium text-center hover:bg-accent-hover transition">Proceed to Checkout</Link>
+            {!user && (
+              <p className="text-xs text-gray-400 text-center mt-2">Checking out as Guest. You can also <Link href="/auth?redirect=checkout" className="text-accent hover:underline">Sign In</Link> to save orders.</p>
             )}
             <Link href="/shop" className="block mt-4 text-center text-accent text-sm hover:underline">Continue Shopping</Link>
           </div>

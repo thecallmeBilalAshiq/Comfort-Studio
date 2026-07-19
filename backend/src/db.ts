@@ -109,7 +109,7 @@ export async function initDB() {
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      userId INTEGER NOT NULL,
+      userId INTEGER,
       orderNumber TEXT UNIQUE,
       total REAL NOT NULL,
       shipping REAL DEFAULT 0,
@@ -123,7 +123,7 @@ export async function initDB() {
       shippingZip TEXT,
       shippingCountry TEXT DEFAULT 'United States',
       createdAt TEXT DEFAULT (datetime('now')),
-      FOREIGN KEY (userId) REFERENCES users(id)
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL
     )
   `);
   db.run(`
@@ -224,6 +224,62 @@ export async function initDB() {
   try { db.run("ALTER TABLE orders ADD COLUMN paymentScreenshot TEXT DEFAULT ''"); } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'local'"); } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''"); } catch {}
+
+  // Migrate orders table to make userId nullable if it was originally NOT NULL
+  try {
+    const stmt = db.prepare("PRAGMA table_info(orders)");
+    const tableInfo: any[] = [];
+    while (stmt.step()) {
+      const cols = stmt.getColumnNames();
+      const vals = stmt.get();
+      // Row to object
+      const obj: any = {};
+      for (let i = 0; i < cols.length; i++) {
+        obj[cols[i]] = vals[i];
+      }
+      tableInfo.push(obj);
+    }
+    stmt.free();
+
+    const userIdCol = tableInfo.find((c: any) => c.name === 'userId');
+    if (userIdCol && userIdCol.notnull === 1) {
+      console.log('Migrating orders table to make userId nullable...');
+      db.run('PRAGMA foreign_keys = OFF');
+      db.run('BEGIN TRANSACTION');
+      db.run('ALTER TABLE orders RENAME TO orders_old');
+      db.run(`
+        CREATE TABLE IF NOT EXISTS orders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          userId INTEGER,
+          orderNumber TEXT UNIQUE,
+          total REAL NOT NULL,
+          shipping REAL DEFAULT 0,
+          status TEXT DEFAULT 'pending',
+          shippingName TEXT,
+          shippingEmail TEXT,
+          shippingPhone TEXT,
+          shippingAddress TEXT,
+          shippingCity TEXT,
+          shippingState TEXT,
+          shippingZip TEXT,
+          shippingCountry TEXT DEFAULT 'United States',
+          paymentScreenshot TEXT DEFAULT '',
+          createdAt TEXT DEFAULT (datetime('now')),
+          FOREIGN KEY (userId) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+      db.run(`
+        INSERT INTO orders (id, userId, orderNumber, total, shipping, status, shippingName, shippingEmail, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, shippingCountry, paymentScreenshot, createdAt)
+        SELECT id, userId, orderNumber, total, shipping, status, shippingName, shippingEmail, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, shippingCountry, COALESCE(paymentScreenshot, ''), createdAt FROM orders_old
+      `);
+      db.run('DROP TABLE orders_old');
+      db.run('COMMIT');
+      db.run('PRAGMA foreign_keys = ON');
+      console.log('Orders table migrated successfully.');
+    }
+  } catch (err) {
+    console.error('Migration failed:', err);
+  }
 
   save();
 }

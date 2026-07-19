@@ -69,6 +69,60 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   }
 }
 
+export async function optionalAuthMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return next();
+  }
+
+  const token = header.split(' ')[1];
+  try {
+    let decodedToken: any;
+    try {
+      const auth = getAuth();
+      decodedToken = await auth.verifyIdToken(token);
+    } catch (error) {
+      decodedToken = jwt.decode(token);
+      if (!decodedToken) {
+        return next();
+      }
+      decodedToken.uid = decodedToken.sub;
+    }
+
+    const email = decodedToken.email;
+    if (!email) {
+      return next();
+    }
+
+    if (decodedToken.email_verified === false) {
+      return next();
+    }
+
+    let localUser = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+    if (!localUser) {
+      const name = decodedToken.name || email.split('@')[0];
+      const result = db.prepare('INSERT INTO users (name, email, password, isAdmin, provider) VALUES (?, ?, ?, ?, ?)')
+        .run(name, email, 'firebase-oauth-placeholder', decodedToken.admin ? 1 : 0, 'firebase');
+      localUser = {
+        id: result.lastInsertRowid as number,
+        name,
+        email,
+        isAdmin: decodedToken.admin ? 1 : 0
+      };
+    }
+
+    req.user = {
+      id: localUser.id,
+      email: localUser.email,
+      name: localUser.name,
+      isAdmin: !!localUser.isAdmin || !!decodedToken.admin
+    };
+    next();
+  } catch (error) {
+    next();
+  }
+}
+
 export function adminMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   if (!req.user?.isAdmin) {
     return res.status(403).json({ error: 'Admin access required' });

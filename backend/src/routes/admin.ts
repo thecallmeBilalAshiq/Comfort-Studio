@@ -15,7 +15,7 @@ router.get('/stats', (_req, res) => {
   const totalCategories = (db.prepare('SELECT COUNT(*) as val FROM categories').get() as any).val;
   const totalReviews = (db.prepare('SELECT COUNT(*) as val FROM reviews').get() as any).val;
   const avgRating = (db.prepare('SELECT COALESCE(AVG(rating), 0) as val FROM reviews').get() as any).val;
-  const recentOrders = db.prepare('SELECT o.*, u.name as customerName FROM orders o JOIN users u ON o.userId = u.id ORDER BY o.createdAt DESC LIMIT 5').all();
+  const recentOrders = db.prepare('SELECT o.*, COALESCE(u.name, o.shippingName) as customerName FROM orders o LEFT JOIN users u ON o.userId = u.id ORDER BY o.createdAt DESC LIMIT 5').all();
   res.json({ totalRevenue, totalProducts, totalOrders, totalUsers, pendingOrders, totalCategories, totalReviews, avgRating: parseFloat(avgRating.toFixed(1)), recentOrders });
 });
 
@@ -85,11 +85,66 @@ router.delete('/categories/:id', (req, res) => {
 
 // Orders
 router.get('/orders', (_req, res) => {
-  const orders = db.prepare(`SELECT o.*, u.name as customerName, u.email as customerEmail FROM orders o JOIN users u ON o.userId = u.id ORDER BY o.createdAt DESC`).all();
+  const orders = db.prepare(`SELECT o.*, COALESCE(u.name, o.shippingName) as customerName, COALESCE(u.email, o.shippingEmail) as customerEmail FROM orders o LEFT JOIN users u ON o.userId = u.id ORDER BY o.createdAt DESC`).all();
   for (const order of orders as any[]) {
     order.items = db.prepare(`SELECT oi.*, p.name, p.image FROM order_items oi JOIN products p ON oi.productId = p.id WHERE oi.orderId = ?`).all(order.id);
   }
   res.json(orders);
+});
+
+router.post('/orders', (req, res) => {
+  try {
+    const { 
+      customerName, customerEmail, customerPhone, 
+      shippingAddress, shippingCity, shippingState, shippingZip, shippingCountry, 
+      items, status 
+    } = req.body;
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({ error: 'Order must contain items' });
+    }
+
+    let userId: number | null = null;
+    if (customerEmail) {
+      const u = db.prepare('SELECT id FROM users WHERE email = ?').get(customerEmail) as any;
+      if (u) userId = u.id;
+    }
+
+    let total = 0;
+    for (const item of items) {
+      total += item.price * item.quantity;
+    }
+
+    let orderNumber = generateOrderNumber();
+    while (db.prepare('SELECT id FROM orders WHERE orderNumber = ?').get(orderNumber)) {
+      orderNumber = generateOrderNumber();
+    }
+
+    const orderResult = db.prepare(`
+      INSERT INTO orders (
+        userId, orderNumber, total, shipping, status, 
+        shippingName, shippingEmail, shippingPhone, 
+        shippingAddress, shippingCity, shippingState, shippingZip, shippingCountry
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      userId, orderNumber, total, 0, status || 'pending',
+      customerName, customerEmail, customerPhone || '',
+      shippingAddress || '', shippingCity || '', shippingState || '', shippingZip || '', shippingCountry || 'United States'
+    );
+
+    const orderId = orderResult.lastInsertRowid;
+    const insertItem = db.prepare('INSERT INTO order_items (orderId, productId, quantity, price) VALUES (?, ?, ?, ?)');
+    const updateStock = db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?');
+
+    for (const item of items) {
+      insertItem.run(orderId, item.productId, item.quantity, item.price);
+      updateStock.run(item.quantity, item.productId);
+    }
+
+    res.json({ success: true, id: orderId, orderNumber });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.put('/orders/:id', (req, res) => {
@@ -207,5 +262,14 @@ router.put('/footer', (req, res) => {
   }
   res.json({ success: true });
 });
+
+function generateOrderNumber(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = 'CS-';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 
 export default router;

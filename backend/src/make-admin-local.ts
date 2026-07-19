@@ -4,7 +4,7 @@ import path from 'path';
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
-const userEmail = 'bashiq031@gmail.com'; // Email of user you want to make admin
+const userEmail = 'comfortstudiouk@gmail.com'; // Email of user you want to make admin
 
 async function setAdminLocal() {
   try {

@@ -52,38 +52,99 @@ export default function AdminProductsPage() {
     try { await api.admin.deleteProduct(id); toast.success('Deleted'); loadData(); } catch { toast.error('Failed'); }
   };
 
+  const setFormAndSlug = (name: string) => {
+    if (!editing) return;
+    setEditing({
+      ...editing,
+      name,
+      slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    });
+  };
+
   const selectedCat = categories.find(c => c.id === editing?.categoryId);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-3"><Package size={28} /><h1 className="font-display text-3xl font-bold">Products</h1></div>
-        <div className="flex gap-3">
-          <input type="text" value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search..." className="px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent" />
-          <button onClick={() => { setEditing({...empty}); setIsCreating(true); }} className="flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg text-sm font-medium hover:bg-accent-hover transition"><Plus size={16} /> Add Product</button>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Package size={28} className="text-accent" />
+          <h1 className="font-display text-3xl font-bold">Products</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <input 
+            type="text" 
+            value={filter} 
+            onChange={e => setFilter(e.target.value)} 
+            placeholder="Search products..." 
+            className="input-modern w-48 sm:w-64" 
+          />
+          <button 
+            onClick={() => { setEditing({...empty}); setIsCreating(true); }} 
+            className="flex items-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-sm font-semibold transition shrink-0 shadow-lg shadow-accent/10"
+          >
+            <Plus size={16} /> Add Product
+          </button>
         </div>
       </div>
 
-      <div className="bg-white border rounded-xl overflow-hidden">
+      <div className="glass-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-gray-500 border-b bg-gray-50"><th className="p-3">Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Badge</th><th>Actions</th></tr></thead>
+            <thead>
+              <tr className="text-left text-gray-500 border-b bg-gray-50/50">
+                <th className="p-4 font-semibold">Name</th>
+                <th className="p-4 font-semibold">Category</th>
+                <th className="p-4 font-semibold">Price</th>
+                <th className="p-4 font-semibold">Stock</th>
+                <th className="p-4 font-semibold">Badge</th>
+                <th className="p-4 font-semibold text-right">Actions</th>
+              </tr>
+            </thead>
             <tbody>
               {filtered.map(p => (
-                <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50">
-                  <td className="p-3 font-medium">{p.name}</td>
-                  <td className="text-gray-500">{p.categoryName}</td>
-                  <td>${p.price}</td>
-                  <td><span className={`font-medium ${p.stock <= 0 ? 'text-red-500' : p.stock <= 5 ? 'text-orange-500' : 'text-green-600'}`}>{p.stock}</span></td>
-                  <td>{p.badge && <span className="px-2 py-1 bg-accent/10 text-accent rounded text-xs">{p.badge}</span>}</td>
-                  <td className="p-3">
-                    <div className="flex gap-2">
-                      <button onClick={() => { setEditing(p); setIsCreating(false); }} className="p-1 hover:bg-gray-200 rounded"><Pencil size={14} /></button>
-                      <button onClick={() => remove(p.id)} className="p-1 hover:bg-red-100 rounded text-red-500"><Trash2 size={14} /></button>
+                <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50/50 transition">
+                  <td className="p-4 font-medium text-gray-800">{p.name}</td>
+                  <td className="p-4 text-gray-500">{p.categoryName}</td>
+                  <td className="p-4 font-semibold">${Number(p.price).toFixed(2)}</td>
+                  <td className="p-4">
+                    <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${
+                      p.stock <= 0 ? 'bg-red-50 text-red-600 border border-red-100' : 
+                      p.stock <= 5 ? 'bg-orange-50 text-orange-600 border border-orange-100' : 
+                      'bg-green-50 text-green-600 border border-green-100'
+                    }`}>
+                      {p.stock} in stock
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    {p.badge && (
+                      <span className="px-2 py-0.5 bg-accent/10 text-accent rounded-full text-xs font-medium border border-accent/20">
+                        {p.badge}
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex gap-2 justify-end">
+                      <button 
+                        onClick={() => { setEditing(p); setIsCreating(false); }} 
+                        className="p-2 hover:bg-gray-100 rounded-xl text-gray-500 hover:text-brand transition"
+                      >
+                        <Pencil size={15} />
+                      </button>
+                      <button 
+                        onClick={() => remove(p.id)} 
+                        className="p-2 hover:bg-red-50 rounded-xl text-red-500 hover:text-red-700 transition"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
                   </td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center p-8 text-gray-400">No products found</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -91,30 +152,157 @@ export default function AdminProductsPage() {
 
       {/* Edit modal */}
       {editing && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">{isCreating ? 'Add Product' : 'Edit Product'}</h2>
-              <button onClick={() => { setEditing(null); setIsCreating(false); }} className="p-1 hover:bg-gray-100 rounded"><X size={20} /></button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in visible">
+          <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b pb-4">
+              <h2 className="text-xl font-bold text-gray-800">{isCreating ? 'Add New Product' : 'Edit Product'}</h2>
+              <button 
+                onClick={() => { setEditing(null); setIsCreating(false); }} 
+                className="p-1.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition"
+              >
+                <X size={20} />
+              </button>
             </div>
+            
             <div className="space-y-4">
-              <div><label className="block text-sm font-medium mb-1">Name</label><input type="text" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-')})} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-              <div><label className="block text-sm font-medium mb-1">Description</label><textarea value={editing.description} onChange={e => setEditing({...editing, description: e.target.value})} rows={3} className="w-full px-3 py-2 border rounded-lg text-sm resize-none" /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium mb-1">Price ($)</label><input type="number" value={editing.price} onChange={e => setEditing({...editing, price: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-                <div><label className="block text-sm font-medium mb-1">Original Price ($)</label><input type="number" value={editing.originalPrice || ''} onChange={e => setEditing({...editing, originalPrice: e.target.value ? parseFloat(e.target.value) : null})} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Product Name *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editing.name} 
+                    onChange={e => setFormAndSlug(e.target.value)} 
+                    className="input-modern" 
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Description *</label>
+                  <textarea 
+                    required 
+                    value={editing.description} 
+                    onChange={e => setEditing({...editing, description: e.target.value})} 
+                    rows={4} 
+                    className="input-modern resize-none" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Price ($) *</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={editing.price} 
+                    onChange={e => setEditing({...editing, price: parseFloat(e.target.value) || 0})} 
+                    className="input-modern" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Original Price ($)</label>
+                  <input 
+                    type="number" 
+                    value={editing.originalPrice || ''} 
+                    onChange={e => setEditing({...editing, originalPrice: e.target.value ? parseFloat(e.target.value) : null})} 
+                    className="input-modern" 
+                    placeholder="None" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Category *</label>
+                  <select 
+                    value={editing.categoryId ?? 0} 
+                    onChange={e => setEditing({...editing, categoryId: parseInt(e.target.value), subcategoryId: 0})} 
+                    className="input-modern"
+                  >
+                    <option value={0}>Select Category</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Subcategory</label>
+                  <select 
+                    value={editing.subcategoryId ?? 0} 
+                    onChange={e => setEditing({...editing, subcategoryId: parseInt(e.target.value)})} 
+                    className="input-modern"
+                  >
+                    <option value={0}>None</option>
+                    {selectedCat?.subcategories?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Stock Quantity *</label>
+                  <input 
+                    type="number" 
+                    required 
+                    value={editing.stock} 
+                    onChange={e => setEditing({...editing, stock: parseInt(e.target.value) || 0})} 
+                    className="input-modern" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Badge</label>
+                  <select 
+                    value={editing.badge ?? ''} 
+                    onChange={e => setEditing({...editing, badge: e.target.value})} 
+                    className="input-modern"
+                  >
+                    <option value="">None</option>
+                    <option value="new">New</option>
+                    <option value="sale">Sale</option>
+                    <option value="best-seller">Best Seller</option>
+                    <option value="featured">Featured</option>
+                  </select>
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Image URL *</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={editing.image} 
+                    onChange={e => setEditing({...editing, image: e.target.value})} 
+                    className="input-modern" 
+                    placeholder="https://... or Google Drive link" 
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">Supports direct image paths and Google Drive share URLs.</p>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium mb-1">Category</label><select value={editing.categoryId} onChange={e => setEditing({...editing, categoryId: parseInt(e.target.value), subcategoryId: 0})} className="w-full px-3 py-2 border rounded-lg text-sm"><option value={0}>None</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
-                <div><label className="block text-sm font-medium mb-1">Subcategory</label><select value={editing.subcategoryId} onChange={e => setEditing({...editing, subcategoryId: parseInt(e.target.value)})} className="w-full px-3 py-2 border rounded-lg text-sm"><option value={0}>None</option>{selectedCat?.subcategories?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
+
+              {/* Dynamic Image Preview */}
+              {editing.image && (
+                <div className="border rounded-xl p-3 bg-gray-50 flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border bg-white shrink-0">
+                    <img 
+                      src={convertGoogleDriveUrl(editing.image)} 
+                      alt="Product Preview" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=100';
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">Image Preview</p>
+                    <p className="text-[10px] text-gray-400 truncate max-w-[300px]">{editing.image}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-2">
+                <input 
+                  type="checkbox" 
+                  id="featured"
+                  checked={!!editing.featured} 
+                  onChange={e => setEditing({...editing, featured: e.target.checked ? 1 : 0})} 
+                  className="w-4 h-4 rounded text-accent focus:ring-accent border-gray-300 accent-accent" 
+                />
+                <label htmlFor="featured" className="text-sm font-medium text-gray-700 cursor-pointer select-none">Featured Product</label>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="block text-sm font-medium mb-1">Stock</label><input type="number" value={editing.stock} onChange={e => setEditing({...editing, stock: parseInt(e.target.value) || 0})} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-                <div><label className="block text-sm font-medium mb-1">Badge</label><select value={editing.badge} onChange={e => setEditing({...editing, badge: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm"><option value="">None</option><option value="new">New</option><option value="sale">Sale</option><option value="best-seller">Best Seller</option><option value="featured">Featured</option></select></div>
-              </div>
-              <div><label className="block text-sm font-medium mb-1">Image URL</label><input type="text" value={editing.image} onChange={e => setEditing({...editing, image: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="https://... or Google Drive share link" /><p className="text-xs text-gray-400 mt-1">Supports direct URLs and Google Drive share links</p></div>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={!!editing.featured} onChange={e => setEditing({...editing, featured: e.target.checked ? 1 : 0})} className="accent-accent" /><span className="text-sm">Featured Product</span></label>
-              <button onClick={save} className="w-full py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-hover transition flex items-center justify-center gap-2"><Save size={16} /> {isCreating ? 'Create Product' : 'Save Changes'}</button>
+
+              <button 
+                onClick={save} 
+                className="w-full py-3 bg-accent hover:bg-accent-hover text-white rounded-xl font-semibold shadow-lg shadow-accent/15 transition flex items-center justify-center gap-2"
+              >
+                <Save size={16} /> {isCreating ? 'Create Product' : 'Save Changes'}
+              </button>
             </div>
           </div>
         </div>

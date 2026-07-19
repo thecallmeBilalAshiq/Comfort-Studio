@@ -15,7 +15,7 @@ initializeApp({
   credential: cert(serviceAccount)
 });
 
-const userEmail = 'bashiq031@gmail.com'; // Email of user you want to make admin
+const userEmail = 'comfortstudiouk@gmail.com'; // Email of user you want to make admin
 
 async function setAdminRole() {
   try {

@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
-import { ShoppingCart, ChevronDown, Download } from 'lucide-react';
+import { ShoppingCart, ChevronDown, Download, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { FadeIn } from '@/components/ScrollAnimations';
 
@@ -14,18 +14,92 @@ export default function AdminOrdersPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState('');
+  
+  // Manual order logging state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<number | ''>('');
+  const [selectedQuantity, setSelectedQuantity] = useState(1);
+  const [newOrder, setNewOrder] = useState({
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    shippingAddress: '',
+    shippingCity: '',
+    shippingState: '',
+    shippingZip: '',
+    shippingCountry: 'United States',
+    status: 'pending',
+    items: [] as { productId: number; quantity: number; price: number; name: string }[]
+  });
 
   useEffect(() => {
     if (!user?.isAdmin) { router.push('/auth'); return; }
     api.admin.getOrders().then(setOrders);
+    api.admin.getProducts().then(setProducts).catch(() => {});
   }, [user]);
 
   const filtered = statusFilter ? orders.filter(o => o.status === statusFilter) : orders;
 
   const updateStatus = async (id: number, status: string) => {
     try { await api.admin.updateOrderStatus(id, status); setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o)); toast.success('Updated'); } catch { toast.error('Failed'); }
+  };
+
+  const handleAddItem = () => {
+    if (!selectedProductId) return;
+    const prod = products.find(p => p.id === Number(selectedProductId));
+    if (!prod) return;
+    
+    const existingIdx = newOrder.items.findIndex(i => i.productId === prod.id);
+    if (existingIdx > -1) {
+      const updatedItems = [...newOrder.items];
+      updatedItems[existingIdx].quantity += selectedQuantity;
+      setNewOrder({ ...newOrder, items: updatedItems });
+    } else {
+      setNewOrder({
+        ...newOrder,
+        items: [...newOrder.items, { productId: prod.id, quantity: selectedQuantity, price: prod.price, name: prod.name }]
+      });
+    }
+    setSelectedProductId('');
+    setSelectedQuantity(1);
+  };
+
+  const handleRemoveItem = (productId: number) => {
+    setNewOrder({
+      ...newOrder,
+      items: newOrder.items.filter(i => i.productId !== productId)
+    });
+  };
+
+  const handleCreateOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newOrder.items.length === 0) {
+      toast.error('Please add at least one item');
+      return;
+    }
+    try {
+      await api.admin.createOrder(newOrder);
+      toast.success('Order logged successfully!');
+      setShowCreateModal(false);
+      api.admin.getOrders().then(setOrders);
+      setNewOrder({
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
+        shippingAddress: '',
+        shippingCity: '',
+        shippingState: '',
+        shippingZip: '',
+        shippingCountry: 'United States',
+        status: 'pending',
+        items: []
+      });
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to log order');
+    }
   };
 
   const downloadExcel = () => {
@@ -105,14 +179,20 @@ export default function AdminOrdersPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="space-y-8">
       <FadeIn>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <ShoppingCart size={28} className="text-accent" />
             <h1 className="font-display text-3xl font-bold">Orders</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+            <button 
+              onClick={() => setShowCreateModal(true)} 
+              className="flex items-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-sm font-semibold transition shrink-0 shadow-lg shadow-accent/10"
+            >
+              Log New Order
+            </button>
             <button 
               onClick={downloadExcel} 
               className="flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition shadow-lg shadow-green-600/10 shrink-0"
@@ -148,7 +228,7 @@ export default function AdminOrdersPage() {
             </div>
             {expanded === o.id && (
               <div className="border-t p-5 bg-gray-50/50">
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <p className="text-xs text-gray-500 mb-2 font-medium">Items</p>
                     {o.items?.map((item: any) => (
@@ -174,6 +254,220 @@ export default function AdminOrdersPage() {
         ))}
         {filtered.length === 0 && <p className="text-center text-gray-500 py-10">No orders found</p>}
       </div>
+
+      {/* Log New Order Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b pb-4">
+              <h2 className="text-xl font-bold text-gray-800">Log Customer Order (Admin)</h2>
+              <button 
+                onClick={() => setShowCreateModal(false)} 
+                className="p-1.5 hover:bg-gray-100 rounded-xl text-gray-400 hover:text-gray-600 transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateOrder} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Shipping info */}
+                <div className="space-y-4">
+                  <h3 className="font-bold text-gray-700 text-sm border-b pb-2">Customer & Shipping Information</h3>
+                  
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Customer Name *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={newOrder.customerName} 
+                      onChange={e => setNewOrder({ ...newOrder, customerName: e.target.value })} 
+                      className="input-modern" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Customer Email *</label>
+                    <input 
+                      type="email" 
+                      required 
+                      value={newOrder.customerEmail} 
+                      onChange={e => setNewOrder({ ...newOrder, customerEmail: e.target.value })} 
+                      className="input-modern" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Customer Phone</label>
+                    <input 
+                      type="text" 
+                      value={newOrder.customerPhone} 
+                      onChange={e => setNewOrder({ ...newOrder, customerPhone: e.target.value })} 
+                      className="input-modern" 
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Shipping Address *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={newOrder.shippingAddress} 
+                      onChange={e => setNewOrder({ ...newOrder, shippingAddress: e.target.value })} 
+                      className="input-modern" 
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">City *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={newOrder.shippingCity} 
+                        onChange={e => setNewOrder({ ...newOrder, shippingCity: e.target.value })} 
+                        className="input-modern" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">State *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={newOrder.shippingState} 
+                        onChange={e => setNewOrder({ ...newOrder, shippingState: e.target.value })} 
+                        className="input-modern" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">ZIP Code *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={newOrder.shippingZip} 
+                        onChange={e => setNewOrder({ ...newOrder, shippingZip: e.target.value })} 
+                        className="input-modern" 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Country *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        value={newOrder.shippingCountry} 
+                        onChange={e => setNewOrder({ ...newOrder, shippingCountry: e.target.value })} 
+                        className="input-modern" 
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Initial Order Status *</label>
+                    <select 
+                      value={newOrder.status} 
+                      onChange={e => setNewOrder({ ...newOrder, status: e.target.value })} 
+                      className="input-modern"
+                    >
+                      {statuses.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Items selection */}
+                <div className="space-y-4">
+                  <h3 className="font-bold text-gray-700 text-sm border-b pb-2">Select Products</h3>
+                  
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Choose Product</label>
+                      <select 
+                        value={selectedProductId} 
+                        onChange={e => setSelectedProductId(e.target.value ? Number(e.target.value) : '')} 
+                        className="input-modern"
+                      >
+                        <option value="">Select a product...</option>
+                        {products.map(p => (
+                          <option key={p.id} value={p.id}>{p.name} (${Number(p.price).toFixed(2)})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="w-20">
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Qty</label>
+                      <input 
+                        type="number" 
+                        min={1} 
+                        value={selectedQuantity} 
+                        onChange={e => setSelectedQuantity(parseInt(e.target.value) || 1)} 
+                        className="input-modern" 
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={handleAddItem} 
+                      className="bg-accent text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-accent-hover transition h-[42px]"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  <div className="border rounded-xl p-3 bg-gray-50/50 min-h-[150px] space-y-2">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">Added Items ({newOrder.items.length})</p>
+                    
+                    {newOrder.items.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic text-center py-8">No items added yet. Choose products above.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                        {newOrder.items.map(item => (
+                          <div key={item.productId} className="flex justify-between items-center bg-white p-2 rounded-lg border text-xs">
+                            <div className="flex-1 truncate">
+                              <span className="font-semibold text-gray-800">{item.name}</span>
+                              <span className="text-gray-400 ml-2">x{item.quantity}</span>
+                            </div>
+                            <span className="font-semibold text-[#8d6e63] mr-3">${(item.price * item.quantity).toFixed(2)}</span>
+                            <button 
+                              type="button" 
+                              onClick={() => handleRemoveItem(item.productId)} 
+                              className="text-red-500 hover:text-red-700 font-bold"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-accent/5 p-4 rounded-xl border border-accent/10 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-700">Subtotal:</span>
+                    <span className="text-xl font-bold text-accent">
+                      ${newOrder.items.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setShowCreateModal(false)} 
+                  className="px-5 py-2.5 border rounded-xl text-sm font-semibold hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-sm font-semibold transition shadow-lg shadow-accent/15"
+                >
+                  Log Order
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
