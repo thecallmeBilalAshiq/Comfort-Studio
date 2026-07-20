@@ -18,7 +18,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isLoginPage && (!user || !user.isAdmin)) {
+      const isAuthorizedAdmin = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+      if (!isLoginPage && !isAuthorizedAdmin) {
         router.replace('/admin/login');
       } else {
         setChecking(false);
@@ -39,7 +40,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!user || !user.isAdmin) {
+  const isAuthorizedAdmin = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+  if (!isAuthorizedAdmin) {
     return null;
   }
 

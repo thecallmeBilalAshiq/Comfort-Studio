@@ -13,12 +13,14 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user?.isAdmin) {
+    const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+    if (isAuthorized) {
       router.push('/admin');
     }
   }, [user, router]);
 
-  if (user?.isAdmin) return null;
+  const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+  if (isAuthorized) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +49,7 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input-modern" placeholder="admin@example.com" />
+              <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="input-modern" placeholder="comfortstudiouk@gmail.com" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>

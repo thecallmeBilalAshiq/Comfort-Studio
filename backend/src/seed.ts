@@ -7,9 +7,9 @@ async function seed() {
   const adminPassword = bcrypt.hashSync('abdul_studio@8989$$', 10);
 
   // Seed admin
-  const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('numanasghar901@gmail.com');
+  const existingAdmin = db.prepare('SELECT id FROM users WHERE email = ?').get('comfortstudiouk@gmail.com');
   if (!existingAdmin) {
-    db.prepare('INSERT INTO users (name, email, password, isAdmin) VALUES (?, ?, ?, 1)').run('Admin', 'numanasghar901@gmail.com', adminPassword);
+    db.prepare('INSERT INTO users (name, email, password, isAdmin) VALUES (?, ?, ?, 1)').run('Admin', 'comfortstudiouk@gmail.com', adminPassword);
   }
 
   // Seed categories
