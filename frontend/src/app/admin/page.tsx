@@ -23,7 +23,7 @@ export default function AdminPage() {
   if (!isAuthorized) return null;
 
   const statCards = stats ? [
-    { icon: <TrendingUp size={22} />, label: 'Revenue', value: `$${stats.totalRevenue.toLocaleString()}`, color: 'from-green-500 to-emerald-600' },
+    { icon: <TrendingUp size={22} />, label: 'Revenue', value: `£${stats.totalRevenue.toLocaleString()}`, color: 'from-green-500 to-emerald-600' },
     { icon: <Package size={22} />, label: 'Products', value: stats.totalProducts, color: 'from-blue-500 to-indigo-600' },
     { icon: <ShoppingCart size={22} />, label: 'Orders', value: stats.totalOrders, color: 'from-purple-500 to-violet-600' },
     { icon: <Users size={22} />, label: 'Customers', value: stats.totalUsers, color: 'from-orange-500 to-amber-600' },

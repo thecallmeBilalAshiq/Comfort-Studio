@@ -85,8 +85,8 @@ export default function ProductPage() {
           </div>
 
           <div className="flex items-baseline gap-3 mt-6">
-            <span className="text-3xl font-bold text-brand">${product.price}</span>
-            {product.originalPrice && <span className="text-lg text-gray-400 line-through">${product.originalPrice}</span>}
+            <span className="text-3xl font-bold text-brand">£{product.price}</span>
+            {product.originalPrice && <span className="text-lg text-gray-400 line-through">£{product.originalPrice}</span>}
             {product.originalPrice && <span className="text-sm font-medium text-red-500">-{Math.round((1 - product.price / product.originalPrice) * 100)}%</span>}
           </div>
 

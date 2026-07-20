@@ -35,7 +35,7 @@ export default function CartPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <Link href={`/product/${item.slug}`} className="font-medium hover:text-accent transition line-clamp-1">{item.name || 'Product'}</Link>
-                <p className="text-accent font-bold mt-1">${item.price}</p>
+                <p className="text-accent font-bold mt-1">£{item.price}</p>
                 {item.stock !== undefined && item.stock <= 5 && item.stock > 0 && <p className="text-xs text-orange-500 mt-1">Only {item.stock} left</p>}
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center border rounded-lg">
@@ -44,7 +44,7 @@ export default function CartPage() {
                     <button onClick={() => updateQty(item.productId, item.quantity + 1)} className="p-2 hover:bg-gray-100 transition"><Plus size={14} /></button>
                   </div>
                   <div className="flex items-center gap-4">
-                    <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="font-bold">£{(item.price * item.quantity).toFixed(2)}</p>
                     <button onClick={() => remove(item.productId)} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
                   </div>
                 </div>
@@ -58,10 +58,10 @@ export default function CartPage() {
           <div className="bg-gray-50 rounded-xl p-6 sticky top-24">
             <h2 className="font-semibold text-lg mb-4">Order Summary</h2>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-medium">${total.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className="font-medium">{shipping === 0 ? 'Free' : `$${shipping}`}</span></div>
-              {shipping > 0 && <p className="text-xs text-green-600">Add ${(500 - total).toFixed(2)} more for free shipping</p>}
-              <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="font-bold text-lg">${(total + shipping).toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-medium">£{total.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className="font-medium">{shipping === 0 ? 'Free' : `£${shipping}`}</span></div>
+              {shipping > 0 && <p className="text-xs text-green-600">Add £{(500 - total).toFixed(2)} more for free shipping</p>}
+              <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="font-bold text-lg">£{(total + shipping).toFixed(2)}</span></div>
             </div>
             <Link href="/checkout" className="mt-6 block w-full py-3 bg-accent text-white rounded-lg font-medium text-center hover:bg-accent-hover transition">Proceed to Checkout</Link>
             {!user && (

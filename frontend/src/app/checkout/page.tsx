@@ -74,7 +74,7 @@ export default function CheckoutPage() {
     };
 
     const whatsappMessage = encodeURIComponent(
-      `Hello Comfort Studio, I just placed order *${orderComplete.orderNumber || `#${orderComplete.id}`}* totaling *$${Number(orderComplete.total).toFixed(2)}*. Here is my payment receipt.`
+      `Hello Comfort Studio, I just placed order *${orderComplete.orderNumber || `#${orderComplete.id}`}* totaling *£${Number(orderComplete.total).toFixed(2)}*. Here is my payment receipt.`
     );
 
     return (
@@ -91,7 +91,7 @@ export default function CheckoutPage() {
           <div className="bg-gray-50/50 rounded-2xl p-6 border border-gray-100 space-y-2">
             <p className="text-xs uppercase tracking-wider text-gray-400 font-bold">Order Number</p>
             <p className="text-3xl font-bold font-mono text-accent">{orderComplete.orderNumber || `#${orderComplete.id}`}</p>
-            <p className="text-lg font-semibold text-[#8d6e63]">Total: ${Number(orderComplete.total).toFixed(2)}</p>
+            <p className="text-lg font-semibold text-[#8d6e63]">Total: £{Number(orderComplete.total).toFixed(2)}</p>
           </div>
 
           {/* Bank Transfer Instructions */}
@@ -101,7 +101,7 @@ export default function CheckoutPage() {
               Bank Transfer Instructions
             </h3>
             <p className="text-xs text-gray-500 leading-relaxed">
-              Please transfer the total amount of <strong>${Number(orderComplete.total).toFixed(2)}</strong> to the following bank account to process your order:
+              Please transfer the total amount of <strong>£{Number(orderComplete.total).toFixed(2)}</strong> to the following bank account to process your order:
             </p>
             <div className="bg-white rounded-xl p-4 border border-gray-100 text-sm space-y-2.5">
               <div className="flex justify-between">
@@ -265,7 +265,7 @@ export default function CheckoutPage() {
                     <p className="font-medium line-clamp-1">{item.name || 'Product'}</p>
                     <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
                   </div>
-                  <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="font-medium">£{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -276,12 +276,12 @@ export default function CheckoutPage() {
           <div className="glass-card p-6 sticky top-24">
             <h2 className="font-semibold text-lg mb-4">Order Summary</h2>
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>${total.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>{shipping === 0 ? 'Free' : `$${shipping}`}</span></div>
-              <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="font-bold text-lg">${grandTotal.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>£{total.toFixed(2)}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>{shipping === 0 ? 'Free' : `£${shipping}`}</span></div>
+              <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="font-bold text-lg">£{grandTotal.toFixed(2)}</span></div>
             </div>
             <button type="submit" disabled={loading} className="mt-6 w-full btn-primary disabled:opacity-50">
-              {loading ? 'Placing Order...' : `Place Order — $${grandTotal.toFixed(2)}`}
+              {loading ? 'Placing Order...' : `Place Order — £${grandTotal.toFixed(2)}`}
             </button>
           </div>
         </div>

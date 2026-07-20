@@ -116,7 +116,7 @@ export default function AdminOrdersPage() {
       'Customer Email',
       'Created At',
       'Status',
-      'Total Amount ($)',
+      'Total Amount (£)',
       'Items Detail',
       'Shipping Recipient',
       'Shipping Address',
@@ -129,7 +129,7 @@ export default function AdminOrdersPage() {
     ];
 
     const rows = filtered.map(o => {
-      const itemsDetail = o.items ? o.items.map((item: any) => `${item.name} (Qty: ${item.quantity}, Price: $${Number(item.price).toFixed(2)})`).join('; ') : '';
+      const itemsDetail = o.items ? o.items.map((item: any) => `${item.name} (Qty: ${item.quantity}, Price: £${Number(item.price).toFixed(2)})`).join('; ') : '';
       const screenshotLink = o.paymentScreenshot 
         ? (o.paymentScreenshot.startsWith('http') ? o.paymentScreenshot : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${o.paymentScreenshot}`)
         : '';
@@ -225,7 +225,7 @@ export default function AdminOrdersPage() {
                 <select value={o.status} onClick={e => e.stopPropagation()} onChange={e => updateStatus(o.id, e.target.value)} className="input-modern w-auto py-1.5 px-3 text-xs">
                   {statuses.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
                 </select>
-                <p className="font-bold text-lg">${Number(o.total).toFixed(2)}</p>
+                <p className="font-bold text-lg">£{Number(o.total).toFixed(2)}</p>
                 <ChevronDown size={16} className={`text-gray-400 transition-transform duration-300 ${expanded === o.id ? 'rotate-180' : ''}`} />
               </div>
             </div>
@@ -239,7 +239,7 @@ export default function AdminOrdersPage() {
                         <div className="w-10 h-10 bg-gray-200 rounded-lg overflow-hidden"><img src={item.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=50'} alt="" className="w-full h-full object-cover" /></div>
                         <span className="flex-1">{item.name}</span>
                         <span className="text-gray-500">x{item.quantity}</span>
-                        <span className="font-medium">${Number(item.price).toFixed(2)}</span>
+                        <span className="font-medium">£{Number(item.price).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>
@@ -417,7 +417,7 @@ export default function AdminOrdersPage() {
                       >
                         <option value="">Select a product...</option>
                         {products.map(p => (
-                          <option key={p.id} value={p.id}>{p.name} (${Number(p.price).toFixed(2)})</option>
+                          <option key={p.id} value={p.id}>{p.name} (£{Number(p.price).toFixed(2)})</option>
                         ))}
                       </select>
                     </div>
@@ -453,7 +453,7 @@ export default function AdminOrdersPage() {
                               <span className="font-semibold text-gray-800">{item.name}</span>
                               <span className="text-gray-400 ml-2">x{item.quantity}</span>
                             </div>
-                            <span className="font-semibold text-[#8d6e63] mr-3">${(item.price * item.quantity).toFixed(2)}</span>
+                            <span className="font-semibold text-[#8d6e63] mr-3">£{(item.price * item.quantity).toFixed(2)}</span>
                             <button 
                               type="button" 
                               onClick={() => handleRemoveItem(item.productId)} 
@@ -470,7 +470,7 @@ export default function AdminOrdersPage() {
                   <div className="bg-accent/5 p-4 rounded-xl border border-accent/10 flex justify-between items-center">
                     <span className="text-sm font-semibold text-gray-700">Subtotal:</span>
                     <span className="text-xl font-bold text-accent">
-                      ${newOrder.items.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2)}
+                      £{newOrder.items.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2)}
                     </span>
                   </div>
                 </div>

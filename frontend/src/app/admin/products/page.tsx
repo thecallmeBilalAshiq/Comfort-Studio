@@ -108,7 +108,7 @@ export default function AdminProductsPage() {
                 <tr key={p.id} className="border-b last:border-0 hover:bg-gray-50/50 transition">
                   <td className="p-4 font-medium text-gray-800">{p.name}</td>
                   <td className="p-4 text-gray-500">{p.categoryName}</td>
-                  <td className="p-4 font-semibold">${Number(p.price).toFixed(2)}</td>
+                  <td className="p-4 font-semibold">£{Number(p.price).toFixed(2)}</td>
                   <td className="p-4">
                     <span className={`inline-flex items-center px-2 py-1 rounded-lg text-xs font-semibold ${
                       p.stock <= 0 ? 'bg-red-50 text-red-600 border border-red-100' : 
@@ -190,7 +190,7 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Price ($) *</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Price (£) *</label>
                   <input 
                     type="number" 
                     required 
@@ -200,7 +200,7 @@ export default function AdminProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Original Price ($)</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Original Price (£)</label>
                   <input 
                     type="number" 
                     value={editing.originalPrice || ''} 

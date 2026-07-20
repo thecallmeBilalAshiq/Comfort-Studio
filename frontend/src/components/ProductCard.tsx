@@ -64,8 +64,8 @@ export default function ProductCard({ product, dark }: { product: Product; dark?
         </div>
         <div className="flex items-center justify-between mt-3">
           <div className="flex items-center gap-2">
-            <span className={`text-lg font-bold ${dark ? 'text-white' : 'text-brand'}`}>${price}</span>
-            {origPrice && <span className={`text-sm line-through ${dark ? 'text-gray-500' : 'text-gray-400'}`}>${origPrice}</span>}
+            <span className={`text-lg font-bold ${dark ? 'text-white' : 'text-brand'}`}>£{price}</span>
+            {origPrice && <span className={`text-sm line-through ${dark ? 'text-gray-500' : 'text-gray-400'}`}>£{origPrice}</span>}
           </div>
         </div>
       </div>

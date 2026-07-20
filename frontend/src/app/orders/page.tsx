@@ -90,7 +90,7 @@ export default function OrdersPage() {
             <span className={`px-3 py-1.5 rounded-xl text-xs font-medium border ${statusColors[order.status] || 'bg-gray-100'}`}>
               {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
             </span>
-            <p className="font-bold text-lg">${Number(order.total).toFixed(2)}</p>
+            <p className="font-bold text-lg">£{Number(order.total).toFixed(2)}</p>
             {!isTrackedView && (
               <ChevronDown size={18} className={`text-gray-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
             )}
@@ -128,9 +128,9 @@ export default function OrdersPage() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
-                      <p className="text-xs text-gray-500">Qty: {item.quantity} x ${Number(item.price).toFixed(2)}</p>
+                      <p className="text-xs text-gray-500">Qty: {item.quantity} x £{Number(item.price).toFixed(2)}</p>
                     </div>
-                    <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="font-medium">£{(item.price * item.quantity).toFixed(2)}</p>
                   </Link>
                 ))}
               </div>
@@ -216,7 +216,7 @@ export default function OrdersPage() {
                         </button>
                         
                         <a 
-                          href={`https://wa.me/447983630088?text=${encodeURIComponent(`Hello Comfort Studio, here is my payment proof for order *${order.orderNumber || `#${order.id}`}* totaling *$${Number(order.total).toFixed(2)}*.`)}`}
+                          href={`https://wa.me/447983630088?text=${encodeURIComponent(`Hello Comfort Studio, here is my payment proof for order *${order.orderNumber || `#${order.id}`}* totaling *£${Number(order.total).toFixed(2)}*.`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 py-1 px-3 rounded bg-[#25D366] hover:bg-[#20ba5a] text-white font-bold text-[10px]"

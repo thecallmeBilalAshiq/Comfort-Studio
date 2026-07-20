@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
-import { Plus, Pencil, Trash2, X, Save, Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Save, Layers, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { convertGoogleDriveUrl } from '@/lib/driveUrl';
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 
 interface Cat { id: number; name: string; slug: string; image: string; productCount: number; subcategories: { id: number; name: string; slug: string; }[]; }
 
@@ -16,6 +17,7 @@ export default function AdminCategoriesPage() {
   const [editing, setEditing] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const { upload, loading: uploadingImage } = useCloudinaryUpload();
 
   useEffect(() => {
     const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
@@ -82,7 +84,47 @@ export default function AdminCategoriesPage() {
             </div>
             <div className="space-y-4">
               <div><label className="block text-sm font-medium mb-1">Name</label><input type="text" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-')})} className="w-full px-3 py-2 border rounded-lg text-sm" /></div>
-              <div><label className="block text-sm font-medium mb-1">Image URL</label><input type="text" value={editing.image || ''} onChange={e => setEditing({...editing, image: e.target.value})} className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="https://... or Google Drive share link" /><p className="text-xs text-gray-400 mt-1">Supports direct URLs and Google Drive share links</p></div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Category Image</label>
+                <div className="flex gap-3">
+                  <input 
+                    type="text" 
+                    value={editing.image || ''} 
+                    onChange={e => setEditing({...editing, image: e.target.value})} 
+                    className="flex-1 px-3 py-2 border rounded-lg text-sm" 
+                    placeholder="https://... or upload a local file" 
+                  />
+                  <div className="relative shrink-0">
+                    <input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          toast.loading('Uploading image to Cloudinary...', { id: 'cloudinary-cat-upload' });
+                          const url = await upload(file, 'comfort_products');
+                          setEditing({ ...editing, image: url });
+                          toast.success('Uploaded to Cloudinary!', { id: 'cloudinary-cat-upload' });
+                        } catch (err: any) {
+                          toast.error(err.message || 'Upload failed', { id: 'cloudinary-cat-upload' });
+                        }
+                      }}
+                      disabled={uploadingImage}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                    <button 
+                      type="button" 
+                      disabled={uploadingImage}
+                      className="px-4 py-2 border rounded-lg text-sm bg-gray-50 hover:bg-gray-100 transition flex items-center gap-1.5 h-full whitespace-nowrap"
+                    >
+                      <Upload size={14} />
+                      {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Supports direct URLs, Google Drive share links, or uploading directly to Cloudinary.</p>
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Subcategories</label>
                 {(editing.subcategories || []).map((s: any, i: number) => (

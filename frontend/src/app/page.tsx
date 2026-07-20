@@ -9,7 +9,7 @@ import ScrollBanner from '@/components/ScrollBanner';
 import { FadeIn, FadeInLeft, FadeInRight, ScaleIn } from '@/components/ScrollAnimations';
 
 const features = [
-  { icon: <Truck size={28} />, title: 'Free Shipping', desc: 'On orders over $500' },
+  { icon: <Truck size={28} />, title: 'Free Shipping', desc: 'On orders over £500' },
   { icon: <Shield size={28} />, title: '5-Year Warranty', desc: 'On all products' },
   { icon: <RotateCcw size={28} />, title: '30-Day Returns', desc: 'Hassle-free' },
   { icon: <Headphones size={28} />, title: '24/7 Support', desc: 'Always here for you' },
