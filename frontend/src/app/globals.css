@@ -6,7 +6,7 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-body { font-family: 'Inter', sans-serif; color: #2d2d2d; }
+body { font-family: 'Inter', sans-serif; color: #1a2d36; }
 
 .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
 .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
@@ -70,7 +70,7 @@ body { font-family: 'Inter', sans-serif; color: #2d2d2d; }
 }
 
 .gradient-text {
-  background: linear-gradient(to right, #c8956c, #d97706);
+  background: linear-gradient(to right, #d69730, #0c576d);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -78,29 +78,44 @@ body { font-family: 'Inter', sans-serif; color: #2d2d2d; }
 
 .btn-primary {
   padding: 0.75rem 1.5rem;
-  background: #c8956c;
+  background: #0c576d;
   color: white;
   border-radius: 0.75rem;
   font-weight: 600;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 14px rgba(200, 149, 108, 0.3);
+  box-shadow: 0 4px 14px rgba(12, 87, 109, 0.3);
 }
 .btn-primary:hover {
-  background: #b8844f;
-  box-shadow: 0 6px 20px rgba(200, 149, 108, 0.4);
+  background: #0a495c;
+  box-shadow: 0 6px 20px rgba(12, 87, 109, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-accent {
+  padding: 0.75rem 1.5rem;
+  background: #d69730;
+  color: white;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 14px rgba(214, 151, 48, 0.3);
+}
+.btn-accent:hover {
+  background: #c08422;
+  box-shadow: 0 6px 20px rgba(214, 151, 48, 0.4);
   transform: translateY(-1px);
 }
 
 .btn-secondary {
   padding: 0.75rem 1.5rem;
-  border: 2px solid #2d2d2d;
-  color: #2d2d2d;
+  border: 2px solid #1a2d36;
+  color: #1a2d36;
   border-radius: 0.75rem;
   font-weight: 600;
   transition: all 0.3s ease;
 }
 .btn-secondary:hover {
-  background: #2d2d2d;
+  background: #1a2d36;
   color: white;
 }
 
@@ -115,6 +130,6 @@ body { font-family: 'Inter', sans-serif; color: #2d2d2d; }
   transition: all 0.3s ease;
 }
 .input-modern:focus {
-  border-color: #c8956c;
-  box-shadow: 0 0 0 3px rgba(200, 149, 108, 0.2);
+  border-color: #0c576d;
+  box-shadow: 0 0 0 3px rgba(12, 87, 109, 0.2);
 }

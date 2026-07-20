@@ -64,7 +64,7 @@ export default function Footer() {
                 alt="Comfort Studio Logo" 
                 className="w-8 h-8 rounded-full object-cover border border-white/20 shrink-0"
               />
-              <span>Comfort <span className="text-accent">Studio</span></span>
+              <span><span className="text-comfort-accent">Comfort</span> <span className="text-white">Studio</span></span>
             </Link>
             <p className="mt-4 text-sm text-gray-400 leading-relaxed">
               {footer?.tagline}

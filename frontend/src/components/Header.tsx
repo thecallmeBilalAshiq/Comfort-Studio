@@ -110,7 +110,7 @@ export default function Header() {
                 alt="Comfort Studio Logo" 
                 className="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover border-2 border-accent/20 shrink-0"
               />
-              <span>Comfort <span className="gradient-text">Studio</span></span>
+              <span><span className="text-comfort-accent">Comfort</span> <span className="text-comfort-primary">Studio</span></span>
             </Link>
 
             <nav className="hidden lg:flex items-center gap-1">
