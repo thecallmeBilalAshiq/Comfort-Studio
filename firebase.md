@@ -19,7 +19,7 @@ This step-by-step guide explains how to migrate Comfort Studio from custom JWT a
      projectId: "...",
      storageBucket: "...",
      messagingSenderId: "...",
-     appId: "..."
+     appId: "...",
    };
    ```
 7. In the same Settings panel, click the **Service accounts** tab.
@@ -30,14 +30,18 @@ This step-by-step guide explains how to migrate Comfort Studio from custom JWT a
 ## 💻 Step 2: Frontend Integration (Next.js)
 
 ### 1. Install Dependencies
+
 Navigate to your `frontend/` directory and install the Firebase SDK:
+
 ```bash
 cd frontend
 npm install firebase
 ```
 
 ### 2. Configure Environment Variables
+
 Create or edit your `frontend/.env.local` file:
+
 ```env
 NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
@@ -48,10 +52,12 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
 
 ### 3. Initialize Firebase Client
+
 Create a new file `frontend/src/lib/firebase.ts`:
+
 ```typescript
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -67,17 +73,19 @@ export const auth = getAuth(app);
 ```
 
 ### 4. Update the `AuthContext`
+
 Replace the logic in `frontend/src/contexts/AuthContext.tsx` with Firebase's auth state listener:
+
 ```typescript
 'use client';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { auth } from '@/lib/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   updateProfile,
-  onAuthStateChanged 
+  onAuthStateChanged
 } from 'firebase/auth';
 
 interface AuthContextType {
@@ -150,66 +158,86 @@ export const useAuth = () => {
 ## ⚙️ Step 3: Backend Integration (Express)
 
 ### 1. Install Firebase Admin SDK
+
 Navigate to your `backend/` directory:
+
 ```bash
 cd backend
 npm install firebase-admin
 ```
 
 ### 2. Configure Service Account Credentials
+
 Save the service account private key JSON file inside your `backend/` folder (e.g. rename it to `firebase-service-account.json`). Add this file to your `backend/.gitignore` so you do not commit keys to GitHub.
 
 Update `backend/.env`:
+
 ```env
 FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
 ```
 
 ### 3. Initialize Firebase Admin
-Update your server initialization in `backend/src/server.ts` or database connection:
-```typescript
-import admin from 'firebase-admin';
-import path from 'path';
 
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './firebase-service-account.json';
+Update your server initialization in `backend/src/server.ts` or database connection:
+
+```typescript
+import admin from "firebase-admin";
+import path from "path";
+
+const serviceAccountPath =
+  process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+  "./firebase-service-account.json";
 admin.initializeApp({
-  credential: admin.credential.cert(path.resolve(__dirname, '..', serviceAccountPath))
+  credential: admin.credential.cert(
+    path.resolve(__dirname, "..", serviceAccountPath),
+  ),
 });
 ```
 
 ### 4. Rewrite the Authentication Middleware
+
 Update `backend/src/middleware/auth.ts` to verify the Firebase ID Token:
+
 ```typescript
-import { Request, Response, NextFunction } from 'express';
-import admin from 'firebase-admin';
+import { Request, Response, NextFunction } from "express";
+import admin from "firebase-admin";
 
 export interface AuthRequest extends Request {
   user?: { id: string; email: string; isAdmin: boolean; name: string };
 }
 
-export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export async function authMiddleware(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
+  if (!header || !header.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "No token provided" });
   }
 
-  const token = header.split(' ')[1];
+  const token = header.split(" ")[1];
   try {
     const decodedToken = await admin.auth().verifyIdToken(token);
     req.user = {
       id: decodedToken.uid, // Firebase UID is a string
-      email: decodedToken.email || '',
-      name: decodedToken.name || '',
+      email: decodedToken.email || "",
+      name: decodedToken.name || "",
       isAdmin: !!decodedToken.admin, // Reads custom claims
     };
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired Firebase token' });
+    return res.status(401).json({ error: "Invalid or expired Firebase token" });
   }
 }
 
-export function adminMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
+export function adminMiddleware(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) {
   if (!req.user?.isAdmin) {
-    return res.status(403).json({ error: 'Admin access required' });
+    return res.status(403).json({ error: "Admin access required" });
   }
   next();
 }
@@ -222,36 +250,46 @@ export function adminMiddleware(req: AuthRequest, res: Response, next: NextFunct
 To make a user an Admin, you must assign the custom claims object `{ admin: true }` to their UID. You can write a temporary script inside your backend workspace to perform this action.
 
 Create a scratch script in your backend workspace `backend/src/make-admin.ts`:
+
 ```typescript
-import admin from 'firebase-admin';
-import path from 'path';
-import dotenv from 'dotenv';
+import admin from "firebase-admin";
+import path from "path";
+import dotenv from "dotenv";
 
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
 
-const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH || './firebase-service-account.json';
+const serviceAccountPath =
+  process.env.FIREBASE_SERVICE_ACCOUNT_PATH ||
+  "./firebase-service-account.json";
 admin.initializeApp({
-  credential: admin.credential.cert(path.resolve(__dirname, '..', serviceAccountPath))
+  credential: admin.credential.cert(
+    path.resolve(__dirname, "..", serviceAccountPath),
+  ),
 });
 
-const userEmail = 'numanasghar901@gmail.com'; // Email of user you want to make admin
+const userEmail = "comfortstudiouk@gmail.com"; // Email of user you want to make admin
 
 async function setAdminRole() {
   try {
     const user = await admin.auth().getUserByEmail(userEmail);
     await admin.auth().setCustomUserClaims(user.uid, { admin: true });
-    console.log(`Successfully granted admin privileges to ${userEmail} (UID: ${user.uid})`);
+    console.log(
+      `Successfully granted admin privileges to ${userEmail} (UID: ${user.uid})`,
+    );
     process.exit(0);
   } catch (error) {
-    console.error('Error setting admin claims:', error);
+    console.error("Error setting admin claims:", error);
     process.exit(1);
   }
 }
 
 setAdminRole();
 ```
+
 Run this script using the package runner:
+
 ```bash
 npx tsx src/make-admin.ts
 ```
+
 Once executed, the user will be granted the admin claim. When they log in on the client side next, `fbUser.getIdTokenResult(true)` will resolve `claims.admin` to `true`, granting admin access to the storefront and dashboard.
