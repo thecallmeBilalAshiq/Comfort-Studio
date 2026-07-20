@@ -36,7 +36,8 @@ export default function AdminOrdersPage() {
   });
 
   useEffect(() => {
-    if (!user?.isAdmin) { router.push('/auth'); return; }
+    const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+    if (!isAuthorized) return;
     api.admin.getOrders().then(setOrders);
     api.admin.getProducts().then(setProducts).catch(() => {});
   }, [user]);

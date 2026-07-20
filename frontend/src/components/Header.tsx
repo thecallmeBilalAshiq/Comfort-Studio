@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, User, Search, Menu, X, ChevronDown, LogOut, Package, Shield, Phone, MapPin } from 'lucide-react';
+import { ShoppingBag, User, Search, Menu, X, ChevronDown, LogOut, Package, Shield, Phone, MapPin, Mail } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { api } from '@/lib/api';
@@ -75,6 +75,28 @@ export default function Header() {
           <Link href="/verify-email" className="underline font-bold hover:text-white/90 transition whitespace-nowrap">Verify Now &rarr;</Link>
         </div>
       )}
+      
+      {/* Top Banner with Contact Info */}
+      <div className="bg-brand-dark text-white/90 text-[10px] sm:text-xs py-2 px-4 border-b border-white/10 relative z-50">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+          <div className="flex items-center gap-4 sm:gap-6 justify-center sm:justify-start">
+            <a href="tel:+447983630088" className="flex items-center gap-1.5 hover:text-accent transition-colors font-semibold">
+              <Phone size={13} className="text-accent shrink-0" />
+              <span>+44 7983 630088</span>
+            </a>
+            <a href="mailto:comfortstudiouk@gmail.com" className="flex items-center gap-1.5 hover:text-accent transition-colors font-semibold">
+              <Mail size={13} className="text-accent shrink-0" />
+              <span>comfortstudiouk@gmail.com</span>
+            </a>
+          </div>
+          <div className="hidden sm:flex items-center gap-4">
+            <span className="text-[10px] bg-accent/20 text-accent px-2 py-0.5 rounded font-bold uppercase tracking-wider">Free Delivery</span>
+            <span className="text-white/30">|</span>
+            <span className="font-semibold text-white/70">Mon - Sat: 9:00 AM - 8:00 PM</span>
+          </div>
+        </div>
+      </div>
+
       <header className={`sticky top-0 z-50 transition-all duration-500 ${scrolled ? 'bg-[#faf7f4]/95 backdrop-blur-xl shadow-lg shadow-brand/5 border-b border-accent/10' : 'bg-[#faf7f4]'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 lg:h-20">
@@ -84,7 +106,7 @@ export default function Header() {
 
             <Link href="/" className="flex items-center gap-2.5 font-display text-2xl lg:text-3xl font-bold text-brand tracking-tight">
               <img 
-                src="https://res.cloudinary.com/iqtgqdjs/image/upload/v1784311113/Logo_jnlebq.jpg" 
+                src="https://res.cloudinary.com/iqtgqdjs/image/upload/v1784529648/Logo_nr1yn7.jpg" 
                 alt="Comfort Studio Logo" 
                 className="w-10 h-10 lg:w-12 lg:h-12 rounded-full object-cover border-2 border-accent/20 shrink-0"
               />
@@ -208,6 +230,18 @@ export default function Header() {
                     )}
                   </div>
                 ))}
+              </div>
+              {/* Mobile Contact Section */}
+              <div className="pt-4 mt-4 border-t border-gray-200 px-3 space-y-3">
+                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Contact Us</p>
+                <a href="tel:+447983630088" className="flex items-center gap-2.5 py-1 text-sm font-semibold text-brand hover:text-accent transition-colors">
+                  <Phone size={16} className="text-accent shrink-0" />
+                  <span>+44 7983 630088</span>
+                </a>
+                <a href="mailto:comfortstudiouk@gmail.com" className="flex items-center gap-2.5 py-1 text-sm font-semibold text-brand hover:text-accent transition-colors">
+                  <Mail size={16} className="text-accent shrink-0" />
+                  <span>comfortstudiouk@gmail.com</span>
+                </a>
               </div>
             </div>
           )}

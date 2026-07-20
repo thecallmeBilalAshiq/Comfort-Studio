@@ -18,12 +18,14 @@ export default function AdminBannersPage() {
   const [form, setForm] = useState({ title: '', subtitle: '', image: '', bgColor: '#1a1a2e', textColor: '#ffffff', active: true, sortOrder: 0, text: '', speed: 20 });
 
   useEffect(() => {
-    if (!user?.isAdmin) { router.push('/auth'); return; }
+    const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+    if (!isAuthorized) return;
     api.admin.getBanners().then(setBanners);
     api.admin.getScrollBanners().then(setScrollBanners);
   }, [user]);
 
-  if (!user?.isAdmin) return null;
+  const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+  if (!isAuthorized) return null;
 
   const load = () => {
     api.admin.getBanners().then(setBanners);

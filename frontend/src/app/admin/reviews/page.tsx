@@ -14,7 +14,8 @@ export default function AdminReviewsPage() {
   const [replyText, setReplyText] = useState('');
 
   useEffect(() => {
-    if (!user?.isAdmin) { router.push('/auth'); return; }
+    const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+    if (!isAuthorized) return;
     api.admin.getReviews().then(setReviews);
   }, [user]);
 

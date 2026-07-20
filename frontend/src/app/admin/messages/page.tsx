@@ -15,11 +15,13 @@ export default function AdminMessagesPage() {
   const [expanded, setExpanded] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!user?.isAdmin) { router.push('/auth'); return; }
+    const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+    if (!isAuthorized) return;
     api.admin.getContactMessages().then(setMessages);
   }, [user]);
 
-  if (!user?.isAdmin) return null;
+  const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
+  if (!isAuthorized) return null;
 
   const markRead = async (id: number) => {
     try {

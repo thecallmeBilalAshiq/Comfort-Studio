@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Phone, Mail, MapPin, Clock, ArrowRight } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, ArrowRight, Facebook, Instagram } from 'lucide-react';
 import { api } from '@/lib/api';
 import { FooterData } from '@/types';
 
@@ -10,7 +10,46 @@ export default function Footer() {
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    api.getFooter().then(setFooter).catch(() => {});
+    api.getFooter().then(data => {
+      if (data) {
+        setFooter({
+          tagline: data.tagline || 'Transforming houses into homes with premium furniture that combines style, comfort, and quality craftsmanship.',
+          copyright: data.copyright || `© ${new Date().getFullYear()} Comfort Studio. All rights reserved.`,
+          contact: {
+            address: data.address || '123 Furniture Ave, Design District',
+            phone: data.phone || '+44 7983 630088',
+            email: data.email || 'comfortstudiouk@gmail.com',
+            hours: data.hours || 'Mon - Sat: 9:00 AM - 8:00 PM',
+          },
+          socialLinks: [
+            { icon: 'Facebook', url: 'https://www.facebook.com/comfortstudiouk' },
+            { icon: 'Instagram', url: 'https://www.instagram.com/comfortstudiouk' }
+          ],
+          quickLinks: data.quickLinks ? (typeof data.quickLinks === 'string' ? JSON.parse(data.quickLinks) : data.quickLinks) : [],
+          customerService: data.customerServiceLinks ? (typeof data.customerServiceLinks === 'string' ? JSON.parse(data.customerServiceLinks) : data.customerServiceLinks) : (data.customerService ? (typeof data.customerService === 'string' ? JSON.parse(data.customerService) : data.customerService) : []),
+          paymentIcons: data.paymentIcons ? (typeof data.paymentIcons === 'string' ? JSON.parse(data.paymentIcons) : data.paymentIcons) : [],
+        });
+      }
+    }).catch(() => {
+      // Fallback
+      setFooter({
+        tagline: 'Transforming houses into homes with premium furniture that combines style, comfort, and quality craftsmanship.',
+        copyright: `© ${new Date().getFullYear()} Comfort Studio. All rights reserved.`,
+        contact: {
+          address: '123 Furniture Ave, Design District',
+          phone: '+44 7983 630088',
+          email: 'comfortstudiouk@gmail.com',
+          hours: 'Mon - Sat: 9:00 AM - 8:00 PM',
+        },
+        socialLinks: [
+          { icon: 'Facebook', url: 'https://www.facebook.com/profile.php?id=61561167710692' },
+          { icon: 'Instagram', url: 'https://www.instagram.com/official.comfortstudio' }
+        ],
+        quickLinks: [],
+        customerService: [],
+        paymentIcons: []
+      });
+    });
   }, []);
 
   return (
@@ -21,14 +60,14 @@ export default function Footer() {
           <div>
             <Link href="/" className="flex items-center gap-2.5 font-display text-2xl font-bold">
               <img 
-                src="https://res.cloudinary.com/iqtgqdjs/image/upload/v1784311113/Logo_jnlebq.jpg" 
+                src="https://res.cloudinary.com/iqtgqdjs/image/upload/v1784529648/Logo_nr1yn7.jpg" 
                 alt="Comfort Studio Logo" 
                 className="w-8 h-8 rounded-full object-cover border border-white/20 shrink-0"
               />
               <span>Comfort <span className="text-accent">Studio</span></span>
             </Link>
             <p className="mt-4 text-sm text-gray-400 leading-relaxed">
-              {footer?.tagline || 'Transforming houses into homes with premium furniture that combines style, comfort, and quality craftsmanship.'}
+              {footer?.tagline}
             </p>
           </div>
 
@@ -66,16 +105,58 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Contact Us</h3>
             <div className="space-y-3 text-sm text-gray-400">
-              {footer?.contact?.address && <div className="flex items-start gap-2"><MapPin size={16} className="mt-0.5 shrink-0" /> <span>{footer.contact.address}</span></div>}
-              {footer?.contact?.phone && <div className="flex items-center gap-2"><Phone size={16} className="shrink-0" /> <span>{footer.contact.phone}</span></div>}
-              {footer?.contact?.email && <div className="flex items-center gap-2"><Mail size={16} className="shrink-0" /> <span>{footer.contact.email}</span></div>}
-              {footer?.contact?.hours && <div className="flex items-center gap-2"><Clock size={16} className="shrink-0" /> <span>{footer.contact.hours}</span></div>}
+              {footer?.contact?.address && (
+                <div className="flex items-start gap-2">
+                  <MapPin size={16} className="mt-0.5 shrink-0" />
+                  <span>{footer.contact.address}</span>
+                </div>
+              )}
+              {footer?.contact?.phone && (
+                <div className="flex items-center gap-2">
+                  <Phone size={16} className="shrink-0" />
+                  <a href={`tel:${footer.contact.phone.replace(/\s+/g, '')}`} className="hover:text-accent transition-colors">
+                    {footer.contact.phone}
+                  </a>
+                </div>
+              )}
+              {footer?.contact?.email && (
+                <div className="flex items-center gap-2">
+                  <Mail size={16} className="shrink-0" />
+                  <a href={`mailto:${footer.contact.email}`} className="hover:text-accent transition-colors break-all">
+                    {footer.contact.email}
+                  </a>
+                </div>
+              )}
+              {footer?.contact?.hours && (
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="shrink-0" />
+                  <span>{footer.contact.hours}</span>
+                </div>
+              )}
             </div>
-            <div className="mt-4">
-              <p className="text-xs text-gray-500 mb-2">Subscribe for updates</p>
-              <div className="flex">
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Your email" className="flex-1 px-3 py-2 bg-white/10 rounded-l text-sm placeholder:text-gray-500 focus:outline-none" />
-                <button className="px-3 py-2 bg-accent rounded-r text-sm font-medium hover:bg-accent-hover transition">Subscribe</button>
+            
+            {/* Connect With Us */}
+            <div className="mt-6 pt-6 border-t border-white/10">
+              <h3 className="font-semibold mb-3">Connect With Us</h3>
+              <div className="flex items-center gap-3">
+                <a 
+                  href="https://www.facebook.com/profile.php?id=61561167710692" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center text-gray-300 hover:bg-accent hover:text-white transition-all duration-300"
+                  aria-label="Facebook"
+                >
+                  <Facebook size={18} />
+                </a>
+                <a 
+                  href="https://www.instagram.com/official.comfortstudio" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center text-gray-300 hover:bg-accent hover:text-white transition-all duration-300"
+                  aria-label="Instagram"
+                >
+                  <Instagram size={18} />
+                </a>
               </div>
             </div>
           </div>
@@ -85,7 +166,7 @@ export default function Footer() {
       {/* Bottom bar */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-500">{footer?.copyright || `© ${new Date().getFullYear()} Comfort Studio. All rights reserved.`}</p>
+          <p className="text-xs text-gray-500">{footer?.copyright}</p>
           {footer?.paymentIcons?.length ? (
             <div className="flex items-center gap-2">
               {footer.paymentIcons.map((icon, i) => (
