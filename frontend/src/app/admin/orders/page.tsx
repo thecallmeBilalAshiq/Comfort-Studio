@@ -130,7 +130,9 @@ export default function AdminOrdersPage() {
 
     const rows = filtered.map(o => {
       const itemsDetail = o.items ? o.items.map((item: any) => `${item.name} (Qty: ${item.quantity}, Price: $${Number(item.price).toFixed(2)})`).join('; ') : '';
-      const screenshotLink = o.paymentScreenshot ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${o.paymentScreenshot}` : '';
+      const screenshotLink = o.paymentScreenshot 
+        ? (o.paymentScreenshot.startsWith('http') ? o.paymentScreenshot : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${o.paymentScreenshot}`)
+        : '';
 
       return [
         o.id,
@@ -229,7 +231,7 @@ export default function AdminOrdersPage() {
             </div>
             {expanded === o.id && (
               <div className="border-t p-5 bg-gray-50/50">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <p className="text-xs text-gray-500 mb-2 font-medium">Items</p>
                     {o.items?.map((item: any) => (
@@ -247,6 +249,30 @@ export default function AdminOrdersPage() {
                     <p className="text-sm text-gray-600">{o.shippingAddress}</p>
                     <p className="text-sm text-gray-600">{o.shippingCity}, {o.shippingState} {o.shippingZip}</p>
                     <p className="text-sm text-gray-600">{o.shippingEmail} · {o.shippingPhone}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2 font-medium">Payment Proof</p>
+                    {o.paymentScreenshot ? (
+                      <div className="space-y-2">
+                        <a 
+                          href={o.paymentScreenshot} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="block w-40 h-28 rounded-xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:opacity-90 transition relative group"
+                        >
+                          <img 
+                            src={o.paymentScreenshot} 
+                            alt="Payment Receipt" 
+                            className="w-full h-full object-cover" 
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                            View Receipt
+                          </div>
+                        </a>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400 font-medium italic">No screenshot uploaded</span>
+                    )}
                   </div>
                 </div>
               </div>

@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
-import { Plus, Pencil, Trash2, X, Save, Package } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Save, Package, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { convertGoogleDriveUrl } from '@/lib/driveUrl';
+import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 
 interface AdminProduct { id: number; name: string; slug: string; description: string; price: number; originalPrice: number|null; image: string; categoryId: number; subcategoryId: number; stock: number; badge: string; featured: number; categoryName: string; }
 interface AdminCategory { id: number; name: string; slug: string; subcategories: { id: number; name: string; slug: string; }[]; }
@@ -19,6 +20,7 @@ export default function AdminProductsPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [filter, setFilter] = useState('');
 
+  const { upload, loading: uploadingImage } = useCloudinaryUpload();
   const empty: AdminProduct = { id: 0, name: '', slug: '', description: '', price: 0, originalPrice: null, image: '', categoryId: 0, subcategoryId: 0, stock: 0, badge: '', featured: 0, categoryName: '' };
 
   useEffect(() => {
@@ -254,16 +256,46 @@ export default function AdminProductsPage() {
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Image URL *</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={editing.image} 
-                    onChange={e => setEditing({...editing, image: e.target.value})} 
-                    className="input-modern" 
-                    placeholder="https://... or Google Drive link" 
-                  />
-                  <p className="text-[10px] text-gray-400 mt-1">Supports direct image paths and Google Drive share URLs.</p>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Product Image *</label>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input 
+                      type="text" 
+                      required 
+                      value={editing.image} 
+                      onChange={e => setEditing({...editing, image: e.target.value})} 
+                      className="input-modern flex-1" 
+                      placeholder="https://... or upload a local file" 
+                    />
+                    <div className="relative shrink-0">
+                      <input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            toast.loading('Uploading image to Cloudinary...', { id: 'cloudinary-prod-upload' });
+                            const url = await upload(file, 'comfort_products');
+                            setEditing({ ...editing, image: url });
+                            toast.success('Uploaded to Cloudinary!', { id: 'cloudinary-prod-upload' });
+                          } catch (err: any) {
+                            toast.error(err.message || 'Upload failed', { id: 'cloudinary-prod-upload' });
+                          }
+                        }}
+                        disabled={uploadingImage}
+                        className="absolute inset-0 w-full. h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      />
+                      <button 
+                        type="button" 
+                        disabled={uploadingImage}
+                        className="btn-secondary py-2 px-4 text-xs flex items-center gap-1.5 h-full whitespace-nowrap"
+                      >
+                        <Upload size={14} />
+                        {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">Supports pasting direct image links or selecting a file to upload directly to Cloudinary.</p>
                 </div>
               </div>
 

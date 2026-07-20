@@ -107,14 +107,14 @@ export default function CheckoutPage() {
               <div className="flex justify-between">
                 <span className="text-gray-400 font-medium">Bank Name:</span>
                 <span className="font-bold text-brand flex items-center gap-1">
-                  Allied Bank Limited (ABL)
-                  <button type="button" onClick={() => { navigator.clipboard.writeText('Allied Bank Limited'); toast.success('Copied!'); }} className="text-gray-400 hover:text-accent transition"><Copy size={12} /></button>
+                  TVP Platforms Ltd
+                  <button type="button" onClick={() => { navigator.clipboard.writeText('TVP Platforms Ltd'); toast.success('Copied!'); }} className="text-gray-400 hover:text-accent transition"><Copy size={12} /></button>
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400 font-medium">Account Number:</span>
                 <span className="font-bold text-brand font-mono flex items-center gap-1">
-                  0123-4567-8910-1112
+                  77526174 
                   <button type="button" onClick={() => { navigator.clipboard.writeText('0123456789101112'); toast.success('Copied!'); }} className="text-gray-400 hover:text-accent transition"><Copy size={12} /></button>
                 </span>
               </div>
