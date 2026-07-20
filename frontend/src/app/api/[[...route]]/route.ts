@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth } from '@/lib/firebase-admin';
-import { getStorage } from 'firebase-admin/storage';
 import { getSupabase } from '@/lib/supabase';
 
 // Lazy proxy for supabase client to prevent build-time crashes when env vars are missing
@@ -23,50 +21,51 @@ async function authenticate(req: Request) {
   }
   const token = authHeader.split(' ')[1];
   try {
-    let decodedToken: any;
-    try {
-      decodedToken = await adminAuth.verifyIdToken(token);
-    } catch (verifyError: any) {
+    let user: any;
+    const { data: { user: sbUser }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !sbUser) {
       // In local development, if system clocks are out of sync (causing fake token expiration),
       // we fall back to manually decoding the token for local testing.
       if (process.env.NODE_ENV === 'development' || !process.env.VERCEL) {
-        console.warn('[Dev Authentication Fallback]: Token verification failed, manually decoding JWT payload:', verifyError.message);
+        console.warn('[Dev Authentication Fallback]: Token verification failed, manually decoding JWT payload:', authError?.message || 'No user found');
         try {
           const parts = token.split('.');
           if (parts.length === 3) {
             const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
-            decodedToken = {
-              uid: payload.user_id || payload.sub,
+            user = {
+              id: payload.user_id || payload.sub,
               email: payload.email || '',
-              name: payload.name || '',
-              admin: !!payload.admin,
+              user_metadata: { name: payload.name || '' }
             };
           } else {
-            throw verifyError;
+            throw authError || new Error('Invalid token structure');
           }
         } catch (decodeError) {
-          throw verifyError;
+          throw authError || new Error('Invalid token');
         }
       } else {
-        throw verifyError;
+        throw authError || new Error('Invalid token');
       }
+    } else {
+      user = sbUser;
     }
     
     // Check role from users table in Supabase
     let { data: userData, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', decodedToken.uid)
+      .eq('id', user.id)
       .maybeSingle();
       
     if (error) throw error;
 
-    // Fallback to match by email if ID is not found (e.g. Firebase vs local Supabase user)
-    if (!userData && decodedToken.email) {
+    // Fallback to match by email if ID is not found (e.g. user in auth but not in users table yet)
+    if (!userData && user.email) {
       const { data: emailUser, error: emailError } = await supabase
         .from('users')
         .select('*')
-        .eq('email', decodedToken.email.toLowerCase())
+        .eq('email', user.email.toLowerCase())
         .maybeSingle();
       
       if (!emailError && emailUser) {
@@ -75,10 +74,10 @@ async function authenticate(req: Request) {
     }
     
     return {
-      id: userData?.id || decodedToken.uid,
-      email: decodedToken.email || '',
-      name: decodedToken.name || userData?.name || '',
-      isAdmin: !!decodedToken.admin || !!userData?.is_admin || decodedToken.email?.toLowerCase() === 'comfortstudiouk@gmail.com',
+      id: userData?.id || user.id,
+      email: user.email || '',
+      name: userData?.name || user.user_metadata?.name || '',
+      isAdmin: !!userData?.is_admin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com',
     };
   } catch (error: any) {
     console.error('[Authentication Error]:', error);
@@ -851,18 +850,21 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
         if (!file) return NextResponse.json({ error: 'No screenshot file provided' }, { status: 400 });
 
         const buffer = Buffer.from(await file.arrayBuffer());
-        const fileName = `receipts/${orderId}_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const fileName = `${orderId}_${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
         
-        // Upload to Firebase Storage
-        const bucket = getStorage().bucket(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'comfort-studio.firebasestorage.app');
-        const fileRef = bucket.file(fileName);
-        
-        await fileRef.save(buffer, {
-          metadata: { contentType: file.type },
-          public: true
-        });
+        // Upload to Supabase Storage
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('receipts')
+          .upload(fileName, buffer, {
+            contentType: file.type,
+            upsert: true
+          });
+          
+        if (uploadError) throw uploadError;
 
-        const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+        const { data: { publicUrl } } = supabase.storage
+          .from('receipts')
+          .getPublicUrl(fileName);
         
         // Save to order document
         const { error: updateError } = await supabase
@@ -1394,9 +1396,9 @@ async function handleDelete(pathSegments: string[], req: NextRequest) {
         const { error } = await supabase.from('users').delete().eq('id', id);
         if (error) throw error;
         
-        // Also delete from Firebase Auth
+        // Also delete from Supabase Auth
         try {
-          await adminAuth.deleteUser(id);
+          await supabase.auth.admin.deleteUser(id);
         } catch {}
         return NextResponse.json({ success: true });
       }

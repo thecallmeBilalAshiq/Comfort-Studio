@@ -1,15 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { auth } from '@/lib/firebase';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  updateProfile,
-  onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail
-} from 'firebase/auth';
+import { supabase } from '@/lib/supabase-client';
 import { api } from '@/lib/api';
 
 interface AuthContextType {
@@ -30,27 +21,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
-      if (fbUser) {
-        // Fetch ID Token containing claims
-        const tokenResult = await fbUser.getIdTokenResult(true);
-        // Store Token for outgoing backend fetches
-        localStorage.setItem('cs_token', tokenResult.token);
-
-        let dbUser: any = null;
-        try {
-          dbUser = await api.getMe();
-        } catch (err) {
-          console.warn('Failed to fetch DB user during state change:', err);
-        }
-
-        setUser({
-          id: dbUser?.id || fbUser.uid,
-          email: dbUser?.email || fbUser.email,
-          name: dbUser?.name || fbUser.displayName || '',
-          isAdmin: !!dbUser?.isAdmin,
-          emailVerified: fbUser.emailVerified,
+    // 1. Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        localStorage.setItem('cs_token', session.access_token);
+        
+        api.getMe().then((dbUser) => {
+          setUser({
+            id: dbUser?.id || session.user.id,
+            email: dbUser?.email || session.user.email,
+            name: dbUser?.name || session.user.user_metadata?.name || '',
+            isAdmin: !!dbUser?.isAdmin || session.user.email?.toLowerCase() === 'comfortstudiouk@gmail.com',
+            emailVerified: session.user.email_confirmed_at ? true : false,
+          });
+        }).catch((err) => {
+          console.warn('Failed to fetch DB user:', err);
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.name || '',
+            isAdmin: session.user.email?.toLowerCase() === 'comfortstudiouk@gmail.com',
+            emailVerified: session.user.email_confirmed_at ? true : false,
+          });
+        }).finally(() => {
+          setLoading(false);
         });
+      } else {
+        localStorage.removeItem('cs_token');
+        setUser(null);
+        setLoading(false);
+      }
+    });
+
+    // 2. Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session) {
+        localStorage.setItem('cs_token', session.access_token);
+        
+        try {
+          const dbUser = await api.getMe();
+          setUser({
+            id: dbUser?.id || session.user.id,
+            email: dbUser?.email || session.user.email,
+            name: dbUser?.name || session.user.user_metadata?.name || '',
+            isAdmin: !!dbUser?.isAdmin || session.user.email?.toLowerCase() === 'comfortstudiouk@gmail.com',
+            emailVerified: session.user.email_confirmed_at ? true : false,
+          });
+        } catch (err) {
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.name || '',
+            isAdmin: session.user.email?.toLowerCase() === 'comfortstudiouk@gmail.com',
+            emailVerified: session.user.email_confirmed_at ? true : false,
+          });
+        }
       } else {
         localStorage.removeItem('cs_token');
         setUser(null);
@@ -58,59 +83,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (e: string, p: string) => {
-    await signInWithEmailAndPassword(auth, e, p);
+    const { error } = await supabase.auth.signInWithPassword({ email: e, password: p });
+    if (error) throw error;
   };
 
   const register = async (n: string, e: string, p: string) => {
-    const cred = await createUserWithEmailAndPassword(auth, e, p);
-    await updateProfile(cred.user, { displayName: n });
-    await sendEmailVerification(cred.user);
+    const { error } = await supabase.auth.signUp({
+      email: e,
+      password: p,
+      options: {
+        data: { name: n }
+      }
+    });
+    if (error) throw error;
   };
 
   const logout = async () => {
-    await signOut(auth);
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   };
 
   const sendVerification = async () => {
-    if (auth.currentUser) {
-      await sendEmailVerification(auth.currentUser);
-    }
+    // Supabase handles email verification flow automatically on signUp if enabled
   };
 
   const checkVerificationStatus = async () => {
-    if (auth.currentUser) {
-      await auth.currentUser.reload();
-      const updatedUser = auth.currentUser;
-      if (updatedUser) {
-        const tokenResult = await updatedUser.getIdTokenResult(true);
-        localStorage.setItem('cs_token', tokenResult.token);
-
-        let dbUser: any = null;
-        try {
-          dbUser = await api.getMe();
-        } catch (err) {
-          console.warn('Failed to fetch DB user during verification check:', err);
-        }
-
-        setUser({
-          id: dbUser?.id || updatedUser.uid,
-          email: dbUser?.email || updatedUser.email,
-          name: dbUser?.name || updatedUser.displayName || '',
-          isAdmin: !!dbUser?.isAdmin,
-          emailVerified: updatedUser.emailVerified,
-        });
-        return updatedUser.emailVerified;
-      }
+    const { data: { session } } = await supabase.auth.refreshSession();
+    if (session?.user) {
+      const emailConfirmed = !!session.user.email_confirmed_at;
+      setUser((prev: any) => prev ? { ...prev, emailVerified: emailConfirmed } : null);
+      return emailConfirmed;
     }
     return false;
   };
 
   const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/update-password`,
+    });
+    if (error) throw error;
   };
 
   return (

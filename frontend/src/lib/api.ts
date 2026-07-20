@@ -1,24 +1,13 @@
-import { auth } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase-client';
 
 const API = process.env.NEXT_PUBLIC_API_URL || (typeof window === 'undefined' ? 'http://localhost:3000' : '');
 
 async function getAuthToken(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
-  if (!auth.currentUser) {
-    try {
-      await auth.authStateReady();
-    } catch (err) {
-      console.warn('Failed to wait for Firebase auth state ready:', err);
-    }
-  }
-  if (auth.currentUser) {
-    try {
-      const token = await auth.currentUser.getIdToken();
-      localStorage.setItem('cs_token', token);
-      return token;
-    } catch (err) {
-      console.warn('Failed to refresh Firebase token:', err);
-    }
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) {
+    localStorage.setItem('cs_token', session.access_token);
+    return session.access_token;
   }
   return localStorage.getItem('cs_token');
 }
@@ -33,38 +22,32 @@ async function fetcher<T>(url: string, options?: RequestInit): Promise<T> {
     const err = await res.json().catch(() => ({ error: 'Request failed' }));
     const isTokenExpired = res.status === 401 || 
                            (err.error && (
-                             err.error.includes('auth/id-token-expired') || 
                              err.error.includes('expired') || 
-                             err.error.includes('Token expired')
+                             err.error.includes('Token expired') ||
+                             err.error.includes('Invalid session')
                            ));
     if (isTokenExpired && typeof window !== 'undefined') {
+      console.warn('Token expired. Refreshing session and retrying...');
       try {
-        await auth.authStateReady();
-      } catch (e) {}
-      if (auth.currentUser) {
-        console.warn('Token expired. Forcing refresh and retrying...');
-        try {
-          const freshToken = await auth.currentUser.getIdToken(true);
-          localStorage.setItem('cs_token', freshToken);
-          headers['Authorization'] = `Bearer ${freshToken}`;
+        const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+        if (!refreshError && session) {
+          localStorage.setItem('cs_token', session.access_token);
+          headers['Authorization'] = `Bearer ${session.access_token}`;
           res = await fetch(`${API}${url}`, { ...options, headers });
           if (res.ok) {
             return res.json();
           }
-        } catch (refreshErr) {
-          console.error('Failed to force refresh token during retry:', refreshErr);
         }
+      } catch (refreshErr) {
+        console.error('Failed to refresh session during retry:', refreshErr);
       }
       
-      // If we got here, it means we couldn't refresh the token, or the retried request also failed.
-      // We should log out the user so they can log back in.
       console.warn('Authentication session expired. Logging out...');
       localStorage.removeItem('cs_token');
       try {
-        await auth.signOut();
+        await supabase.auth.signOut();
       } catch (e) {}
       
-      // Redirect to /auth page
       window.location.href = `/auth?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
       throw new Error('Your session has expired. Please sign in again.');
     }
@@ -108,35 +91,32 @@ export const api = {
       const err = await res.json().catch(() => ({ error: 'Upload failed' }));
       const isTokenExpired = res.status === 401 || 
                              (err.error && (
-                               err.error.includes('auth/id-token-expired') || 
                                err.error.includes('expired') || 
-                               err.error.includes('Token expired')
+                               err.error.includes('Token expired') ||
+                               err.error.includes('Invalid session')
                              ));
       if (isTokenExpired && typeof window !== 'undefined') {
+        console.warn('Token expired during upload. Refreshing session and retrying...');
         try {
-          await auth.authStateReady();
-        } catch (e) {}
-        if (auth.currentUser) {
-          console.warn('Token expired during upload. Forcing refresh and retrying...');
-          try {
-            const freshToken = await auth.currentUser.getIdToken(true);
-            localStorage.setItem('cs_token', freshToken);
-            headers['Authorization'] = `Bearer ${freshToken}`;
+          const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError && session) {
+            localStorage.setItem('cs_token', session.access_token);
+            headers['Authorization'] = `Bearer ${session.access_token}`;
             res = await fetch(`${API}/api/orders/${orderId}/screenshot`, {
               method: 'POST',
               headers,
               body: formData
             });
             if (res.ok) return res.json();
-          } catch (refreshErr) {
-            console.error('Failed to refresh token during upload retry:', refreshErr);
           }
+        } catch (refreshErr) {
+          console.error('Failed to refresh token during upload retry:', refreshErr);
         }
         
         console.warn('Authentication session expired during upload. Logging out...');
         localStorage.removeItem('cs_token');
         try {
-          await auth.signOut();
+          await supabase.auth.signOut();
         } catch (e) {}
         window.location.href = `/auth?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
         throw new Error('Your session has expired. Please sign in again.');
