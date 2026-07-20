@@ -105,7 +105,7 @@ function AuthContent() {
           </div>
 
           <div className="mt-4 pt-4 border-t text-center">
-            <a href="/admin/login" className="text-xs text-gray-400 hover:text-accent transition">Admin Login</a>
+            <a href="/admin/login" className="text-xs text-gray-400 hover:text-accent transition"></a>
           </div>
         </div>
       </div>

@@ -43,7 +43,7 @@ export default function AdminLoginPage() {
             <div className="w-16 h-16 bg-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Shield size={32} className="text-accent" />
             </div>
-            <h1 className="font-display text-3xl font-bold">Admin Login</h1>
+            <h1 className="font-display text-3xl font-bold"></h1>
             <p className="text-gray-500 mt-2">Sign in to access the dashboard</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
