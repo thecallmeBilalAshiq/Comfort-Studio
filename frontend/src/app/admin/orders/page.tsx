@@ -7,8 +7,15 @@ import { ShoppingCart, ChevronDown, Download, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { FadeIn } from '@/components/ScrollAnimations';
 
-const statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
-const statusColors: Record<string, string> = { pending: 'bg-yellow-100 text-yellow-700', processing: 'bg-blue-100 text-blue-700', shipped: 'bg-purple-100 text-purple-700', delivered: 'bg-green-100 text-green-700', cancelled: 'bg-red-100 text-red-700' };
+const statuses = ['pending', 'pending_proof', 'processing', 'shipped', 'delivered', 'cancelled'];
+const statusColors: Record<string, string> = { 
+  pending: 'bg-yellow-100 text-yellow-700', 
+  pending_proof: 'bg-orange-100 text-orange-700', 
+  processing: 'bg-blue-100 text-blue-700', 
+  shipped: 'bg-purple-100 text-purple-700', 
+  delivered: 'bg-green-100 text-green-700', 
+  cancelled: 'bg-red-100 text-red-700' 
+};
 
 export default function AdminOrdersPage() {
   const { user } = useAuth();
@@ -26,11 +33,8 @@ export default function AdminOrdersPage() {
     customerName: '',
     customerEmail: '',
     customerPhone: '',
-    shippingAddress: '',
     shippingCity: '',
-    shippingState: '',
-    shippingZip: '',
-    shippingCountry: 'United States',
+    shippingPostalCode: '',
     status: 'pending',
     items: [] as { productId: number; quantity: number; price: number; name: string }[]
   });
@@ -90,11 +94,8 @@ export default function AdminOrdersPage() {
         customerName: '',
         customerEmail: '',
         customerPhone: '',
-        shippingAddress: '',
         shippingCity: '',
-        shippingState: '',
-        shippingZip: '',
-        shippingCountry: 'United States',
+        shippingPostalCode: '',
         status: 'pending',
         items: []
       });
@@ -119,10 +120,8 @@ export default function AdminOrdersPage() {
       'Total Amount (£)',
       'Items Detail',
       'Shipping Recipient',
-      'Shipping Address',
       'Shipping City',
-      'Shipping State',
-      'Shipping Zip',
+      'Shipping Postal Code',
       'Shipping Email',
       'Shipping Phone',
       'Payment Screenshot Link'
@@ -144,10 +143,8 @@ export default function AdminOrdersPage() {
         Number(o.total).toFixed(2),
         itemsDetail,
         o.shippingName,
-        o.shippingAddress,
         o.shippingCity,
-        o.shippingState,
-        o.shippingZip,
+        o.shippingPostalCode || o.shippingZip,
         o.shippingEmail,
         o.shippingPhone,
         screenshotLink
@@ -246,8 +243,7 @@ export default function AdminOrdersPage() {
                   <div>
                     <p className="text-xs text-gray-500 mb-2 font-medium">Shipping</p>
                     <p className="text-sm font-medium">{o.shippingName}</p>
-                    <p className="text-sm text-gray-600">{o.shippingAddress}</p>
-                    <p className="text-sm text-gray-600">{o.shippingCity}, {o.shippingState} {o.shippingZip}</p>
+                    <p className="text-sm text-gray-600">{o.shippingCity}, {o.shippingPostalCode || o.shippingZip}</p>
                     <p className="text-sm text-gray-600">{o.shippingEmail} · {o.shippingPhone}</p>
                   </div>
                   <div>
@@ -334,17 +330,6 @@ export default function AdminOrdersPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Shipping Address *</label>
-                    <input 
-                      type="text" 
-                      required 
-                      value={newOrder.shippingAddress} 
-                      onChange={e => setNewOrder({ ...newOrder, shippingAddress: e.target.value })} 
-                      className="input-modern" 
-                    />
-                  </div>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">City *</label>
@@ -357,35 +342,13 @@ export default function AdminOrdersPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">State *</label>
+                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Postal code *</label>
                       <input 
                         type="text" 
                         required 
-                        value={newOrder.shippingState} 
-                        onChange={e => setNewOrder({ ...newOrder, shippingState: e.target.value })} 
-                        className="input-modern" 
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">ZIP Code *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={newOrder.shippingZip} 
-                        onChange={e => setNewOrder({ ...newOrder, shippingZip: e.target.value })} 
-                        className="input-modern" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Country *</label>
-                      <input 
-                        type="text" 
-                        required 
-                        value={newOrder.shippingCountry} 
-                        onChange={e => setNewOrder({ ...newOrder, shippingCountry: e.target.value })} 
+                        value={newOrder.shippingPostalCode} 
+                        onChange={e => setNewOrder({ ...newOrder, shippingPostalCode: e.target.value })} 
+                        placeholder="e.g. EC1A 1BB" 
                         className="input-modern" 
                       />
                     </div>

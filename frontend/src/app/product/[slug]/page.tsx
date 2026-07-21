@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ShoppingBag, Minus, Plus, Star, Truck, Shield, RotateCcw, MessageCircle, Send } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -12,6 +12,7 @@ import ProductCard from '@/components/ProductCard';
 
 export default function ProductPage() {
   const params = useParams();
+  const router = useRouter();
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
@@ -37,6 +38,12 @@ export default function ProductPage() {
     if (!product || product.stock <= 0) return;
     for (let i = 0; i < qty; i++) addToCart(product.id);
     toast.success(`Added ${qty} item${qty > 1 ? 's' : ''} to cart!`);
+  };
+
+  const handleBuyNow = () => {
+    if (!product || product.stock <= 0) return;
+    for (let i = 0; i < qty; i++) addToCart(product.id);
+    router.push('/checkout');
   };
 
   const handleReview = async (e: React.FormEvent) => {
@@ -107,15 +114,20 @@ export default function ProductPage() {
 
           {/* Quantity + Add to Cart */}
           {product.stock > 0 && (
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex items-center border rounded-lg">
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} className="p-3 hover:bg-gray-100 transition"><Minus size={16} /></button>
+            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <div className="flex items-center justify-between border rounded-lg h-12 px-2 shrink-0">
+                <button onClick={() => setQty(q => Math.max(1, q - 1))} className="p-2 hover:bg-gray-100 transition rounded-md"><Minus size={16} /></button>
                 <span className="w-12 text-center font-medium">{qty}</span>
-                <button onClick={() => setQty(q => Math.min(product.stock, q + 1))} className="p-3 hover:bg-gray-100 transition"><Plus size={16} /></button>
+                <button onClick={() => setQty(q => Math.min(product.stock, q + 1))} className="p-2 hover:bg-gray-100 transition rounded-md"><Plus size={16} /></button>
               </div>
-              <button onClick={handleAddToCart} className="flex-1 flex items-center justify-center gap-2 py-3 bg-brand text-white rounded-lg font-medium hover:bg-accent transition">
-                <ShoppingBag size={18} /> Add to Cart
-              </button>
+              <div className="flex-1 flex gap-3">
+                <button onClick={handleAddToCart} className="flex-1 flex items-center justify-center gap-2 py-3 border border-brand text-brand hover:bg-brand/5 rounded-lg font-medium transition h-12">
+                  <ShoppingBag size={18} /> Add to Cart
+                </button>
+                <button onClick={handleBuyNow} className="flex-1 flex items-center justify-center gap-2 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-hover transition h-12">
+                  Buy Now
+                </button>
+              </div>
             </div>
           )}
 

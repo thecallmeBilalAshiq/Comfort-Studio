@@ -96,7 +96,7 @@ router.post('/orders', (req, res) => {
   try {
     const { 
       customerName, customerEmail, customerPhone, 
-      shippingAddress, shippingCity, shippingState, shippingZip, shippingCountry, 
+      shippingCity, shippingPostalCode, shippingZip, 
       items, status 
     } = req.body;
 
@@ -129,7 +129,7 @@ router.post('/orders', (req, res) => {
     `).run(
       userId, orderNumber, total, 0, status || 'pending',
       customerName, customerEmail, customerPhone || '',
-      shippingAddress || '', shippingCity || '', shippingState || '', shippingZip || '', shippingCountry || 'United States'
+      '', shippingCity || '', '', shippingPostalCode || shippingZip || '', ''
     );
 
     const orderId = orderResult.lastInsertRowid;

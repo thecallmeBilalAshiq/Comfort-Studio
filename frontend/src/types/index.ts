@@ -106,11 +106,8 @@ export interface Order {
   shippingName: string;
   shippingEmail: string;
   shippingPhone: string;
-  shippingAddress: string;
   shippingCity: string;
-  shippingState: string;
-  shippingZip: string;
-  shippingCountry: string;
+  shippingPostalCode: string;
   createdAt: string;
   paymentScreenshot?: string;
   items?: OrderItem[];

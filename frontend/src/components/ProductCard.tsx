@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ShoppingBag, Star } from 'lucide-react';
 import { Product } from '@/types';
 import { useCart } from '@/contexts/CartContext';
@@ -7,6 +8,7 @@ import toast from 'react-hot-toast';
 
 export default function ProductCard({ product, dark }: { product: Product; dark?: boolean }) {
   const { addToCart } = useCart();
+  const router = useRouter();
 
   const price = Number(product.price) || 0;
   const origPrice = product.originalPrice ? Number(product.originalPrice) : null;
@@ -21,6 +23,13 @@ export default function ProductCard({ product, dark }: { product: Product; dark?
     if (stock <= 0) { toast.error('Out of stock'); return; }
     addToCart(product.id);
     toast.success('Added to cart!');
+  };
+
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (stock <= 0) { toast.error('Out of stock'); return; }
+    addToCart(product.id);
+    router.push('/checkout');
   };
 
   return (
@@ -67,6 +76,14 @@ export default function ProductCard({ product, dark }: { product: Product; dark?
             <span className={`text-lg font-bold ${dark ? 'text-white' : 'text-brand'}`}>£{price}</span>
             {origPrice && <span className={`text-sm line-through ${dark ? 'text-gray-500' : 'text-gray-400'}`}>£{origPrice}</span>}
           </div>
+          {stock > 0 && (
+            <button 
+              onClick={handleBuyNow} 
+              className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white rounded-lg text-xs font-semibold transition duration-300"
+            >
+              Buy Now
+            </button>
+          )}
         </div>
       </div>
     </Link>

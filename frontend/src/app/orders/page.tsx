@@ -138,9 +138,9 @@ export default function OrdersPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-white rounded-xl p-4 text-sm">
-                <p className="font-medium mb-1 text-[#5d4037]">Shipping Address</p>
+                <p className="font-medium mb-1 text-[#5d4037]">Shipping Info</p>
                 <p className="text-gray-600">{order.shippingName}</p>
-                <p className="text-gray-500">{order.shippingAddress}, {order.shippingCity}, {order.shippingState} {order.shippingZip}</p>
+                <p className="text-gray-500">{order.shippingCity}, {order.shippingPostalCode || order.shippingZip}</p>
                 <p className="text-gray-500 mt-1">{order.shippingPhone}</p>
               </div>
 

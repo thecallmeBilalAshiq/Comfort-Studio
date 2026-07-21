@@ -224,11 +224,8 @@ function mapOrder(o: any) {
     shippingName: o.shipping_name,
     shippingEmail: o.shipping_email,
     shippingPhone: o.shipping_phone || '',
-    shippingAddress: o.shipping_address,
     shippingCity: o.shipping_city,
-    shippingState: o.shipping_state,
-    shippingZip: o.shipping_zip,
-    shippingCountry: o.shipping_country || 'United States',
+    shippingPostalCode: o.shipping_zip || '',
     paymentScreenshot: o.payment_screenshot || '',
     createdAt: o.created_at,
     items: o.order_items?.map((item: any) => ({
@@ -927,13 +924,15 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
         const publicUrl = cloudinaryData.secure_url;
         
         // Save to order document
-        const { error: updateError } = await supabase
+        const { data: updatedOrder, error: updateError } = await supabase
           .from('orders')
           .update({
             payment_screenshot: publicUrl,
-            status: 'awaiting_approval'
+            status: 'processing'
           })
-          .eq('id', orderId);
+          .eq('id', orderId)
+          .select()
+          .single();
           
         if (updateError) throw updateError;
 
@@ -1013,6 +1012,8 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
 
       const shippingCost = subtotal >= 500 ? 0 : 50;
       const total = subtotal + shippingCost;
+      const paymentMethod = shipping.paymentMethod || 'Bank Pay';
+      const status = paymentMethod === 'Cash on Delivery' ? 'processing' : 'pending_proof';
 
       const { data: newOrder, error: oErr } = await supabase
         .from('orders')
@@ -1021,15 +1022,15 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           order_number: orderNumber,
           total,
           shipping: shippingCost,
-          status: 'pending',
-          shipping_name: shipping.name || user?.name || 'Guest',
+          status,
+          shipping_name: shipping.name || `${shipping.firstName || ''} ${shipping.lastName || ''}`.trim() || user?.name || 'Guest',
           shipping_email: shipping.email || user?.email || '',
           shipping_phone: shipping.phone || '',
-          shipping_address: shipping.address || '',
+          shipping_address: '',
           shipping_city: shipping.city || '',
-          shipping_state: shipping.state || '',
-          shipping_zip: shipping.zip || '',
-          shipping_country: shipping.country || 'United States'
+          shipping_state: '',
+          shipping_zip: shipping.postalCode || shipping.zip || '',
+          shipping_country: ''
         })
         .select()
         .single();

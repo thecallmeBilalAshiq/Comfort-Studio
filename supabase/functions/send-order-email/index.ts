@@ -16,6 +16,27 @@ Deno.serve(async (req) => {
     const customerName = order.shipping_name || "Customer";
     const orderNumber = order.order_number;
     const total = Number(order.total || 0).toFixed(2);
+
+    const type = payload.type || 'INSERT';
+    const oldRecord = payload.old_record;
+
+    if (type === 'INSERT') {
+      if (order.status === 'pending_proof') {
+        return new Response(JSON.stringify({ success: true, message: "Email skipped for pending_proof on INSERT" }), { 
+          headers: { "Content-Type": "application/json" },
+          status: 200 
+        });
+      }
+    } else if (type === 'UPDATE') {
+      const wasPendingProof = oldRecord?.status === 'pending_proof';
+      const isPaymentConfirmed = order.status === 'processing' || order.status === 'payment_verified' || order.status === 'awaiting_approval';
+      if (!(wasPendingProof && isPaymentConfirmed)) {
+        return new Response(JSON.stringify({ success: true, message: "Email skipped for non-verification UPDATE event" }), { 
+          headers: { "Content-Type": "application/json" },
+          status: 200 
+        });
+      }
+    }
     
     if (!customerEmail) {
       return new Response(JSON.stringify({ error: "No email address on order record" }), { 
@@ -82,8 +103,8 @@ Deno.serve(async (req) => {
               <span class="value">${customerName}</span>
             </div>
             <div class="details-row">
-              <span class="label">Shipping Address:</span>
-              <span class="value">${order.shipping_address}, ${order.shipping_city}, ${order.shipping_state} ${order.shipping_zip}</span>
+              <span class="label">Shipping Destination:</span>
+              <span class="value">${order.shipping_city}, ${order.shipping_zip}</span>
             </div>
             <div class="details-row">
               <span class="label">Total Amount:</span>

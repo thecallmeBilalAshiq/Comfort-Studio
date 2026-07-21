@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-client';
-import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
+import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Check, X, Image as ImageIcon, Eye, ExternalLink } from 'lucide-react';
 
@@ -18,37 +18,8 @@ interface PaymentUploadProps {
  */
 export function PaymentScreenshotUpload({ orderId, orderNumber, total, onSuccess }: PaymentUploadProps) {
   const [file, setFile] = useState<File | null>(null);
-  const { upload, loading: uploading } = useCloudinaryUpload();
+  const [uploading, setUploading] = useState(false);
   const queryClient = useQueryClient();
-
-  // TanStack Query Mutation to update order in Supabase with Cloudinary URL
-  const updateOrderMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const { data, error } = await supabase
-        .from('orders')
-        .update({
-          payment_screenshot: url,
-          status: 'awaiting_approval' // Update status for admin review
-        })
-        .eq('id', orderId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (data) => {
-      toast.success('Payment screenshot verified and saved!');
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
-      if (onSuccess && data.payment_screenshot) {
-        onSuccess(data.payment_screenshot);
-      }
-    },
-    onError: (err: any) => {
-      toast.error(`Database update failed: ${err.message}`);
-    }
-  });
 
   const handleUpload = async () => {
     if (!file) {
@@ -56,14 +27,21 @@ export function PaymentScreenshotUpload({ orderId, orderNumber, total, onSuccess
       return;
     }
 
+    setUploading(true);
     try {
-      // 1. Upload to Cloudinary using comfort_payments preset
-      const secureUrl = await upload(file, 'comfort_payments');
+      const res = await api.uploadPaymentScreenshot(orderId, file);
+      toast.success('Payment screenshot verified and saved!');
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
       
-      // 2. Save the URL to Supabase via mutation
-      await updateOrderMutation.mutateAsync(secureUrl);
+      const screenshotUrl = res.paymentScreenshot || res.screenshotUrl;
+      if (onSuccess && screenshotUrl) {
+        onSuccess(screenshotUrl);
+      }
     } catch (err: any) {
-      // Errors are handled in hooks/mutations and shown via toast
+      toast.error(err.message || 'Failed to upload screenshot');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -89,10 +67,10 @@ export function PaymentScreenshotUpload({ orderId, orderNumber, total, onSuccess
         <button
           type="button"
           onClick={handleUpload}
-          disabled={uploading || updateOrderMutation.isPending || !file}
+          disabled={uploading || !file}
           className="bg-comfort-primary text-white hover:bg-comfort-accent font-bold py-2.5 px-6 rounded-xl text-xs whitespace-nowrap transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {uploading ? 'Uploading...' : updateOrderMutation.isPending ? 'Saving...' : 'Submit Receipt'}
+          {uploading ? 'Uploading...' : 'Submit Receipt'}
         </button>
       </div>
     </div>
@@ -169,8 +147,8 @@ export function AdminPaymentProofViewer({ orderId }: { orderId: number }) {
           <p className="text-xs text-gray-500 mt-0.5">Order Number: {order.order_number || `#${order.id}`}</p>
         </div>
         <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
-          order.status === 'completed' || order.status === 'paid' ? 'bg-green-100 text-green-700' :
-          order.status === 'awaiting_approval' ? 'bg-amber-100 text-amber-700 animate-pulse' :
+          order.status === 'processing' || order.status === 'completed' || order.status === 'paid' ? 'bg-green-100 text-green-700' :
+          order.status === 'pending_proof' ? 'bg-orange-100 text-orange-700' :
           order.status === 'cancelled' ? 'bg-red-100 text-red-700' :
           'bg-gray-100 text-gray-700'
         }`}>
@@ -213,7 +191,7 @@ export function AdminPaymentProofViewer({ orderId }: { orderId: number }) {
           {/* Action buttons for admin */}
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => statusMutation.mutate({ status: 'completed' })}
+              onClick={() => statusMutation.mutate({ status: 'processing' })}
               disabled={statusMutation.isPending}
               className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition duration-300 disabled:opacity-50"
             >

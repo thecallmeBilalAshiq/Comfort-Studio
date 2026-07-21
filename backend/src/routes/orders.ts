@@ -57,7 +57,7 @@ router.get('/:id', authMiddleware, (req: AuthRequest, res) => {
 });
 
 router.get('/track/:orderNumber', (req, res) => {
-  const order = db.prepare('SELECT id, orderNumber, status, total, shippingName, shippingAddress, shippingCity, shippingState, shippingZip, createdAt FROM orders WHERE orderNumber = ?').get(req.params.orderNumber) as any;
+  const order = db.prepare('SELECT id, orderNumber, status, total, shippingName, shippingCity, shippingZip, createdAt FROM orders WHERE orderNumber = ?').get(req.params.orderNumber) as any;
   if (!order) return res.status(404).json({ error: 'Order not found' });
   order.items = db.prepare(`SELECT oi.*, p.name, p.image FROM order_items oi JOIN products p ON oi.productId = p.id WHERE oi.orderId = ?`).all(order.id);
   res.json(order);
@@ -86,10 +86,13 @@ router.post('/', optionalAuthMiddleware, (req: AuthRequest, res) => {
       orderNumber = generateOrderNumber();
     }
 
-    const orderResult = db.prepare(`INSERT INTO orders (userId, orderNumber, total, shipping, shippingName, shippingEmail, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, shippingCountry) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
-      req.user?.id || null, orderNumber, total, shippingCost,
-      `${shipping.firstName} ${shipping.lastName}`, shipping.email, shipping.phone,
-      shipping.address, shipping.city, shipping.state, shipping.zip, shipping.country || 'United States'
+    const paymentMethod = shipping.paymentMethod || 'Bank Pay';
+    const status = paymentMethod === 'Cash on Delivery' ? 'processing' : 'pending_proof';
+
+    const orderResult = db.prepare(`INSERT INTO orders (userId, orderNumber, total, shipping, status, shippingName, shippingEmail, shippingPhone, shippingAddress, shippingCity, shippingState, shippingZip, shippingCountry) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+      req.user?.id || null, orderNumber, total, shippingCost, status,
+      `${shipping.firstName || ''} ${shipping.lastName || ''}`.trim(), shipping.email, shipping.phone,
+      '', shipping.city || '', '', shipping.postalCode || shipping.zip || '', ''
     );
 
     const orderId = orderResult.lastInsertRowid;
@@ -136,7 +139,7 @@ router.post('/:id/screenshot', optionalAuthMiddleware, upload.single('screenshot
     }
 
     const relativePath = `/uploads/${req.file.filename}`;
-    db.prepare('UPDATE orders SET paymentScreenshot = ? WHERE id = ?').run(relativePath, orderId);
+    db.prepare('UPDATE orders SET paymentScreenshot = ?, status = ? WHERE id = ?').run(relativePath, 'processing', orderId);
 
     res.json({ success: true, paymentScreenshot: relativePath });
   } catch (err: any) {
