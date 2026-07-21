@@ -53,8 +53,18 @@ export default function CheckoutPage() {
     e.preventDefault();
     setLoading(true);
     try {
+      const orderItemsPayload = items.map(i => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        selectedSize: i.selectedSize || '',
+        selectedColor: i.selectedColor || '',
+        selectedStorage: i.selectedStorage || '',
+        selectedMattress: i.selectedMattress || '',
+        price: i.price
+      }));
+
       const result = await api.createOrder(
-        items.map(i => ({ productId: i.productId, quantity: i.quantity })),
+        orderItemsPayload,
         { ...form, paymentMethod }
       );
       clear();
@@ -118,6 +128,7 @@ export default function CheckoutPage() {
                   checked={paymentMethod === 'Bank Pay'} 
                   onChange={() => setPaymentMethod('Bank Pay')} 
                   className="mt-1 text-accent focus:ring-accent border-gray-300 h-4 w-4" 
+                  id="payment-method-bank"
                 />
                 <div className="space-y-1">
                   <span className="font-bold text-sm text-[#5d4037] block">Bank Pay</span>
@@ -133,6 +144,7 @@ export default function CheckoutPage() {
                   checked={paymentMethod === 'Cash on Delivery'} 
                   onChange={() => setPaymentMethod('Cash on Delivery')} 
                   className="mt-1 text-accent focus:ring-accent border-gray-300 h-4 w-4" 
+                  id="payment-method-cod"
                 />
                 <div className="space-y-1">
                   <span className="font-bold text-sm text-[#5d4037] block">Cash on Delivery</span>
@@ -146,13 +158,24 @@ export default function CheckoutPage() {
             <h2 className="font-semibold text-lg mb-4">Order Items</h2>
             <div className="space-y-3">
               {items.map(item => (
-                <div key={item.productId} className="flex items-center gap-3 text-sm">
+                <div key={item.id} className="flex items-center gap-3 text-sm">
                   <div className="w-12 h-12 bg-gray-200 rounded-xl overflow-hidden shrink-0">
                     <img src={item.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=100'} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium line-clamp-1">{item.name || 'Product'}</p>
-                    <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
+                    
+                    {/* Variant selections */}
+                    {(item.selectedSize || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
+                      <div className="flex flex-wrap gap-x-2 text-[11px] text-gray-500">
+                        {item.selectedSize && <span>Size: <strong className="text-gray-700">{item.selectedSize}</strong></span>}
+                        {item.selectedColor && <span>Color: <strong className="text-gray-700">{item.selectedColor}</strong></span>}
+                        {item.selectedStorage && <span>Storage: <strong className="text-gray-700">{item.selectedStorage}</strong></span>}
+                        {item.selectedMattress && <span>Mattress: <strong className="text-gray-700">{item.selectedMattress}</strong></span>}
+                      </div>
+                    )}
+
+                    <p className="text-gray-500 text-xs mt-0.5">Qty: {item.quantity}</p>
                   </div>
                   <p className="font-medium">£{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
@@ -166,10 +189,10 @@ export default function CheckoutPage() {
             <h2 className="font-semibold text-lg mb-4">Order Summary</h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>£{total.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>{shipping === 0 ? 'Free' : `£${shipping}`}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>{shipping === 0 ? 'Free' : `£${shipping.toFixed(2)}`}</span></div>
               <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="font-bold text-lg">£{grandTotal.toFixed(2)}</span></div>
             </div>
-            <button type="submit" disabled={loading} className="mt-6 w-full btn-primary disabled:opacity-50">
+            <button type="submit" disabled={loading} className="mt-6 w-full btn-primary disabled:opacity-50" id="place-order-btn">
               {loading ? 'Placing Order...' : `Place Order — £${grandTotal.toFixed(2)}`}
             </button>
           </div>

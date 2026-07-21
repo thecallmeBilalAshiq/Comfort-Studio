@@ -233,10 +233,22 @@ export default function AdminOrdersPage() {
                     <p className="text-xs text-gray-500 mb-2 font-medium">Items</p>
                     {o.items?.map((item: any) => (
                       <div key={item.id} className="flex items-center gap-2 text-sm py-1.5">
-                        <div className="w-10 h-10 bg-gray-200 rounded-lg overflow-hidden"><img src={item.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=50'} alt="" className="w-full h-full object-cover" /></div>
-                        <span className="flex-1">{item.name}</span>
-                        <span className="text-gray-500">x{item.quantity}</span>
-                        <span className="font-medium">£{Number(item.price).toFixed(2)}</span>
+                        <div className="w-10 h-10 bg-gray-200 rounded-lg overflow-hidden shrink-0"><img src={item.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=50'} alt="" className="w-full h-full object-cover" /></div>
+                        <div className="flex-1 min-w-0">
+                          <span className="block font-medium truncate">{item.name}</span>
+                          {(item.selectedSize || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
+                            <span className="block text-[10px] text-gray-500 truncate">
+                              {[
+                                item.selectedSize && `Size: ${item.selectedSize}`,
+                                item.selectedColor && `Color: ${item.selectedColor}`,
+                                item.selectedStorage && `Storage: ${item.selectedStorage}`,
+                                item.selectedMattress && `Mattress: ${item.selectedMattress}`
+                              ].filter(Boolean).join(', ')}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-gray-500 shrink-0">x{item.quantity}</span>
+                        <span className="font-medium shrink-0">£{Number(item.price).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

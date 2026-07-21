@@ -7,9 +7,17 @@ import { useAuth } from './AuthContext';
 interface CartCtx {
   items: CartItem[];
   loading: boolean;
-  addToCart: (productId: number, qty?: number) => Promise<void>;
-  updateQty: (productId: number, qty: number) => Promise<void>;
-  remove: (productId: number) => Promise<void>;
+  addToCart: (
+    productId: number,
+    qty?: number,
+    size?: string,
+    color?: string,
+    storage?: string,
+    mattress?: string,
+    priceOverride?: number
+  ) => Promise<void>;
+  updateQty: (cartItemId: number, qty: number) => Promise<void>;
+  remove: (cartItemId: number) => Promise<void>;
   clear: () => void;
   total: number;
   count: number;
@@ -34,7 +42,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             ...item,
             name: prod.name,
             image: prod.image,
-            price: prod.price,
+            price: item.price || prod.price,
             slug: prod.slug
           };
         }
@@ -69,10 +77,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('cs_guest_cart', JSON.stringify(cart));
   };
 
-  const addToCart = async (productId: number, qty = 1) => {
+  const addToCart = async (
+    productId: number,
+    qty = 1,
+    size?: string,
+    color?: string,
+    storage?: string,
+    mattress?: string,
+    priceOverride?: number
+  ) => {
     if (user) {
       setLoading(true);
-      const updated = await api.addToCart(productId, qty);
+      const updated = await api.addToCart(productId, qty, size, color, storage, mattress, priceOverride);
       setItems(updated);
       setLoading(false);
     } else {
@@ -80,42 +96,65 @@ export function CartProvider({ children }: { children: ReactNode }) {
       let prev: CartItem[] = [];
       try { prev = saved ? JSON.parse(saved) : []; } catch { prev = []; }
 
-      const existing = prev.find(i => i.productId === productId);
+      const existingIndex = prev.findIndex(i =>
+        i.productId === productId &&
+        (i.selectedSize || '') === (size || '') &&
+        (i.selectedColor || '') === (color || '') &&
+        (i.selectedStorage || '') === (storage || '') &&
+        (i.selectedMattress || '') === (mattress || '')
+      );
+
       let next: CartItem[];
-      if (existing) {
-        next = prev.map(i => i.productId === productId ? { ...i, quantity: i.quantity + qty } : i);
+      if (existingIndex > -1) {
+        next = prev.map((item, idx) =>
+          idx === existingIndex ? { ...item, quantity: item.quantity + qty } : item
+        );
       } else {
-        next = [...prev, { id: productId, userId: 0, productId, quantity: qty, name: '', image: '', price: 0, slug: '' }];
+        const newItem: CartItem = {
+          id: Date.now() + Math.random(),
+          userId: 0,
+          productId,
+          quantity: qty,
+          name: '',
+          image: '',
+          price: priceOverride || 0,
+          slug: '',
+          selectedSize: size || '',
+          selectedColor: color || '',
+          selectedStorage: storage || '',
+          selectedMattress: mattress || ''
+        };
+        next = [...prev, newItem];
       }
       saveGuest(next);
-      
+
       const populated = await populateCartItems(next);
       setItems(populated);
     }
   };
 
-  const updateQty = async (productId: number, qty: number) => {
+  const updateQty = async (cartItemId: number, qty: number) => {
     if (user) {
-      const updated = await api.updateCart(productId, qty);
+      const updated = await api.updateCart(cartItemId, qty);
       setItems(updated);
     } else {
       let next: CartItem[] = [];
       setItems(prev => {
-        next = qty <= 0 ? prev.filter(i => i.productId !== productId) : prev.map(i => i.productId === productId ? { ...i, quantity: qty } : i);
+        next = qty <= 0 ? prev.filter(i => i.id !== cartItemId) : prev.map(i => i.id === cartItemId ? { ...i, quantity: qty } : i);
         saveGuest(next);
         return next;
       });
     }
   };
 
-  const remove = async (productId: number) => {
+  const remove = async (cartItemId: number) => {
     if (user) {
-      const updated = await api.removeFromCart(productId);
+      const updated = await api.removeFromCart(cartItemId);
       setItems(updated);
     } else {
       let next: CartItem[] = [];
       setItems(prev => {
-        next = prev.filter(i => i.productId !== productId);
+        next = prev.filter(i => i.id !== cartItemId);
         saveGuest(next);
         return next;
       });

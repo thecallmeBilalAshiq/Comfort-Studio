@@ -128,7 +128,15 @@ export default function OrdersPage() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
-                      <p className="text-xs text-gray-500">Qty: {item.quantity} x £{Number(item.price).toFixed(2)}</p>
+                      {(item.selectedSize || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
+                        <div className="flex flex-wrap gap-x-2 text-[10px] text-gray-500">
+                          {item.selectedSize && <span>Size: {item.selectedSize}</span>}
+                          {item.selectedColor && <span>Color: {item.selectedColor}</span>}
+                          {item.selectedStorage && <span>Storage: {item.selectedStorage}</span>}
+                          {item.selectedMattress && <span>Mattress: {item.selectedMattress}</span>}
+                        </div>
+                      )}
+                      <p className="text-xs text-gray-500 mt-0.5">Qty: {item.quantity} x £{Number(item.price).toFixed(2)}</p>
                     </div>
                     <p className="font-medium">£{(item.price * item.quantity).toFixed(2)}</p>
                   </Link>

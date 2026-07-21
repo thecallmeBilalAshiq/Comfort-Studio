@@ -13,6 +13,14 @@ export interface Product {
   categoryId: number;
   categoryName?: string;
   categorySlug?: string;
+  subcategoryId?: number;
+  subcategoryName?: string;
+  subcategorySlug?: string;
+  galleryImages?: string[];
+  colors?: { name: string; hex: string }[];
+  sizes?: { name: string; priceModifier: number }[];
+  storageOptions?: { name: string; priceModifier: number }[];
+  mattressOptions?: { name: string; priceModifier: number }[];
 }
 
 export interface Category {
@@ -38,6 +46,57 @@ export function formatPrice(price: number): string {
   }).format(price);
 }
 
+// Common options to share
+const SOFA_COLORS = [
+  { name: 'Royal Blue', hex: '#0F4C81' },
+  { name: 'Emerald Green', hex: '#097969' },
+  { name: 'Charcoal Grey', hex: '#36454F' },
+  { name: 'Blush Pink', hex: '#DE5D83' },
+  { name: 'Mustard Yellow', hex: '#E1AD01' }
+];
+
+const MATTRESS_SIZES = [
+  { name: "2'6 Small Single", priceModifier: -120 },
+  { name: "3'0 Single", priceModifier: -80 },
+  { name: "4'0 Small Double", priceModifier: -30 },
+  { name: "4'6 Double", priceModifier: 0 },
+  { name: "5'0 King", priceModifier: 100 },
+  { name: "6'0 Super King", priceModifier: 200 }
+];
+
+const BED_SIZES = [
+  { name: "2'6 Small Single", priceModifier: -150 },
+  { name: "3'0 Single", priceModifier: -100 },
+  { name: "4'0 Small Double", priceModifier: 0 },
+  { name: "4'6 Double", priceModifier: 50 },
+  { name: "5'0 King", priceModifier: 150 },
+  { name: "6'0 Super King", priceModifier: 250 }
+];
+
+const BED_COLORS = [
+  { name: 'Plush Black', hex: '#000000' },
+  { name: 'Plush Cream', hex: '#D2B48C' },
+  { name: 'Plush Grey', hex: '#808080' },
+  { name: 'Plush Gold', hex: '#DAA520' },
+  { name: 'Plush Burgundy', hex: '#800020' },
+  { name: 'Plush Silver', hex: '#C0C0C0' },
+  { name: 'Plush Blue', hex: '#4682B4' }
+];
+
+const BED_STORAGE = [
+  { name: 'No Storage', priceModifier: 0 },
+  { name: '2 Drawers', priceModifier: 60 },
+  { name: '4 Drawers', priceModifier: 100 },
+  { name: 'Gas Lift Ottoman', priceModifier: 180 }
+];
+
+const BED_MATTRESS = [
+  { name: 'None', priceModifier: 0 },
+  { name: 'Memory Foam', priceModifier: 100 },
+  { name: 'Orthopedic', priceModifier: 150 },
+  { name: 'Pocket Spring', priceModifier: 200 }
+];
+
 export const mockCatalog: Category[] = [
   {
     id: 1,
@@ -57,7 +116,14 @@ export const mockCatalog: Category[] = [
         stock: 12,
         rating: 4.8,
         reviewCount: 45,
-        categoryId: 1
+        categoryId: 1,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 102,
@@ -71,7 +137,18 @@ export const mockCatalog: Category[] = [
         stock: 5,
         rating: 4.9,
         reviewCount: 28,
-        categoryId: 1
+        categoryId: 1,
+        colors: [
+          { name: 'Tan Leather', hex: '#A0522D' },
+          { name: 'Dark Brown', hex: '#5C4033' },
+          { name: 'Classic Black', hex: '#000000' }
+        ],
+        galleryImages: [
+          'https://images.unsplash.com/photo-1540574163026-643ea20ade25?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 103,
@@ -85,7 +162,14 @@ export const mockCatalog: Category[] = [
         stock: 18,
         rating: 4.5,
         reviewCount: 15,
-        categoryId: 1
+        categoryId: 1,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -107,7 +191,14 @@ export const mockCatalog: Category[] = [
         stock: 8,
         rating: 4.7,
         reviewCount: 32,
-        categoryId: 2
+        categoryId: 2,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 202,
@@ -121,7 +212,14 @@ export const mockCatalog: Category[] = [
         stock: 4,
         rating: 4.8,
         reviewCount: 19,
-        categoryId: 2
+        categoryId: 2,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -143,7 +241,14 @@ export const mockCatalog: Category[] = [
         stock: 9,
         rating: 4.6,
         reviewCount: 22,
-        categoryId: 3
+        categoryId: 3,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540574163026-643ea20ade25?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 302,
@@ -157,7 +262,14 @@ export const mockCatalog: Category[] = [
         stock: 6,
         rating: 4.9,
         reviewCount: 14,
-        categoryId: 3
+        categoryId: 3,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540574163026-643ea20ade25?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -179,7 +291,14 @@ export const mockCatalog: Category[] = [
         stock: 15,
         rating: 4.4,
         reviewCount: 39,
-        categoryId: 4
+        categoryId: 4,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1544030288-e6e6108867f8?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 402,
@@ -190,10 +309,17 @@ export const mockCatalog: Category[] = [
         originalPrice: null,
         image: 'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=600&auto=format&fit=crop&q=80',
         badge: 'Premium',
-        stock: 7,
+        stock: 10,
         rating: 4.7,
-        reviewCount: 18,
-        categoryId: 4
+        reviewCount: 25,
+        categoryId: 4,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1544030288-e6e6108867f8?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -202,6 +328,10 @@ export const mockCatalog: Category[] = [
     name: 'Beds',
     slug: 'beds',
     image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+    subcategories: [
+      { id: 51, name: "Ottoman Beds", slug: "ottoman-beds", categoryId: 5 },
+      { id: 52, name: "Wooden Beds", slug: "wooden-beds", categoryId: 5 }
+    ],
     products: [
       {
         id: 501,
@@ -215,7 +345,22 @@ export const mockCatalog: Category[] = [
         stock: 11,
         rating: 4.8,
         reviewCount: 54,
-        categoryId: 5
+        categoryId: 5,
+        categoryName: 'Beds',
+        categorySlug: 'beds',
+        subcategoryId: 51,
+        subcategoryName: 'Ottoman Beds',
+        subcategorySlug: 'ottoman-beds',
+        colors: BED_COLORS,
+        sizes: BED_SIZES,
+        storageOptions: BED_STORAGE,
+        mattressOptions: BED_MATTRESS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 502,
@@ -229,7 +374,22 @@ export const mockCatalog: Category[] = [
         stock: 8,
         rating: 4.6,
         reviewCount: 12,
-        categoryId: 5
+        categoryId: 5,
+        categoryName: 'Beds',
+        categorySlug: 'beds',
+        subcategoryId: 52,
+        subcategoryName: 'Wooden Beds',
+        subcategorySlug: 'wooden-beds',
+        colors: BED_COLORS,
+        sizes: BED_SIZES,
+        storageOptions: BED_STORAGE,
+        mattressOptions: BED_MATTRESS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -251,7 +411,14 @@ export const mockCatalog: Category[] = [
         stock: 20,
         rating: 4.7,
         reviewCount: 88,
-        categoryId: 6
+        categoryId: 6,
+        sizes: MATTRESS_SIZES,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 602,
@@ -265,7 +432,14 @@ export const mockCatalog: Category[] = [
         stock: 14,
         rating: 4.9,
         reviewCount: 112,
-        categoryId: 6
+        categoryId: 6,
+        sizes: MATTRESS_SIZES,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -287,7 +461,13 @@ export const mockCatalog: Category[] = [
         stock: 25,
         rating: 4.5,
         reviewCount: 30,
-        categoryId: 7
+        categoryId: 7,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 702,
@@ -301,7 +481,13 @@ export const mockCatalog: Category[] = [
         stock: 10,
         rating: 4.8,
         reviewCount: 17,
-        categoryId: 7
+        categoryId: 7,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -323,7 +509,13 @@ export const mockCatalog: Category[] = [
         stock: 6,
         rating: 4.7,
         reviewCount: 16,
-        categoryId: 8
+        categoryId: 8,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 802,
@@ -337,7 +529,13 @@ export const mockCatalog: Category[] = [
         stock: 3,
         rating: 4.9,
         reviewCount: 9,
-        categoryId: 8
+        categoryId: 8,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -359,7 +557,13 @@ export const mockCatalog: Category[] = [
         stock: 5,
         rating: 4.9,
         reviewCount: 11,
-        categoryId: 9
+        categoryId: 9,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 902,
@@ -373,7 +577,13 @@ export const mockCatalog: Category[] = [
         stock: 4,
         rating: 4.8,
         reviewCount: 7,
-        categoryId: 9
+        categoryId: 9,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -395,7 +605,13 @@ export const mockCatalog: Category[] = [
         stock: 32,
         rating: 4.3,
         reviewCount: 41,
-        categoryId: 10
+        categoryId: 10,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 1002,
@@ -409,7 +625,14 @@ export const mockCatalog: Category[] = [
         stock: 8,
         rating: 4.4,
         reviewCount: 14,
-        categoryId: 10
+        categoryId: 10,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -431,7 +654,14 @@ export const mockCatalog: Category[] = [
         stock: 6,
         rating: 4.9,
         reviewCount: 63,
-        categoryId: 11
+        categoryId: 11,
+        colors: SOFA_COLORS,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 1102,
@@ -445,7 +675,13 @@ export const mockCatalog: Category[] = [
         stock: 15,
         rating: 4.6,
         reviewCount: 25,
-        categoryId: 11
+        categoryId: 11,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -467,7 +703,14 @@ export const mockCatalog: Category[] = [
         stock: 50,
         rating: 4.5,
         reviewCount: 204,
-        categoryId: 12
+        categoryId: 12,
+        sizes: MATTRESS_SIZES,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 1202,
@@ -481,7 +724,13 @@ export const mockCatalog: Category[] = [
         stock: 40,
         rating: 4.4,
         reviewCount: 35,
-        categoryId: 12
+        categoryId: 12,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   },
@@ -503,7 +752,13 @@ export const mockCatalog: Category[] = [
         stock: 1,
         rating: 4.1,
         reviewCount: 4,
-        categoryId: 13
+        categoryId: 13,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1592078615290-033ee584e267?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80'
+        ]
       },
       {
         id: 1302,
@@ -517,7 +772,13 @@ export const mockCatalog: Category[] = [
         stock: 3,
         rating: 4.7,
         reviewCount: 18,
-        categoryId: 13
+        categoryId: 13,
+        galleryImages: [
+          'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1577140917170-285929fb55b7?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80'
+        ]
       }
     ]
   }

@@ -69,12 +69,13 @@ export const api = {
   getCategories: () => fetcher<any[]>('/api/categories'),
 
   getCart: () => fetcher<any[]>('/api/cart'),
-  addToCart: (productId: number, quantity = 1) => fetcher<any[]>('/api/cart', { method: 'POST', body: JSON.stringify({ productId, quantity }) }),
-  updateCart: (productId: number, quantity: number) => fetcher<any[]>(`/api/cart/${productId}`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
-  removeFromCart: (productId: number) => fetcher<any[]>(`/api/cart/${productId}`, { method: 'DELETE' }),
+  addToCart: (productId: number, quantity = 1, size?: string, color?: string, storage?: string, mattress?: string, priceOverride?: number) =>
+    fetcher<any[]>('/api/cart', { method: 'POST', body: JSON.stringify({ productId, quantity, size, color, storage, mattress, price: priceOverride }) }),
+  updateCart: (cartItemId: number, quantity: number) => fetcher<any[]>(`/api/cart/${cartItemId}`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
+  removeFromCart: (cartItemId: number) => fetcher<any[]>(`/api/cart/${cartItemId}`, { method: 'DELETE' }),
 
   getOrders: () => fetcher<any[]>('/api/orders'),
-  createOrder: (items: { productId: number; quantity: number }[], shipping: any) => fetcher<any>('/api/orders', { method: 'POST', body: JSON.stringify({ items, shipping }) }),
+  createOrder: (items: any[], shipping: any) => fetcher<any>('/api/orders', { method: 'POST', body: JSON.stringify({ items, shipping }) }),
   trackOrder: (orderNumber: string, email: string) => fetcher<any>(`/api/orders/track/${orderNumber}?email=${encodeURIComponent(email)}`),
   uploadPaymentScreenshot: async (orderId: number, file: File) => {
     const formData = new FormData();

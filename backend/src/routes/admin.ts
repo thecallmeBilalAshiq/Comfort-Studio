@@ -26,14 +26,49 @@ router.get('/products', (_req, res) => {
 });
 
 router.post('/products', (req, res) => {
-  const { name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured } = req.body;
-  const result = db.prepare('INSERT INTO products (name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured) VALUES (?,?,?,?,?,?,?,?,?,?,?)').run(name, slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), description, price, originalPrice || null, image, categoryId || null, subcategoryId || null, stock || 0, badge || '', featured ? 1 : 0);
+  const { name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, galleryImages, colors, sizes, storageOptions, mattressOptions } = req.body;
+  const result = db.prepare('INSERT INTO products (name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, gallery_images, colors, sizes, storage_options, mattress_options) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
+    name,
+    slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    description,
+    price,
+    originalPrice || null,
+    image,
+    categoryId || null,
+    subcategoryId || null,
+    stock || 0,
+    badge || '',
+    featured ? 1 : 0,
+    galleryImages ? JSON.stringify(galleryImages) : '[]',
+    colors ? JSON.stringify(colors) : '[]',
+    sizes ? JSON.stringify(sizes) : '[]',
+    storageOptions ? JSON.stringify(storageOptions) : '[]',
+    mattressOptions ? JSON.stringify(mattressOptions) : '[]'
+  );
   res.json({ id: result.lastInsertRowid });
 });
 
 router.put('/products/:id', (req, res) => {
-  const { name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured } = req.body;
-  db.prepare('UPDATE products SET name=?, slug=?, description=?, price=?, originalPrice=?, image=?, categoryId=?, subcategoryId=?, stock=?, badge=?, featured=? WHERE id=?').run(name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured ? 1 : 0, req.params.id);
+  const { name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, galleryImages, colors, sizes, storageOptions, mattressOptions } = req.body;
+  db.prepare('UPDATE products SET name=?, slug=?, description=?, price=?, originalPrice=?, image=?, categoryId=?, subcategoryId=?, stock=?, badge=?, featured=?, gallery_images=?, colors=?, sizes=?, storage_options=?, mattress_options=? WHERE id=?').run(
+    name,
+    slug,
+    description,
+    price,
+    originalPrice,
+    image,
+    categoryId,
+    subcategoryId,
+    stock,
+    badge,
+    featured ? 1 : 0,
+    galleryImages ? JSON.stringify(galleryImages) : '[]',
+    colors ? JSON.stringify(colors) : '[]',
+    sizes ? JSON.stringify(sizes) : '[]',
+    storageOptions ? JSON.stringify(storageOptions) : '[]',
+    mattressOptions ? JSON.stringify(mattressOptions) : '[]',
+    req.params.id
+  );
   res.json({ success: true });
 });
 
@@ -133,11 +168,23 @@ router.post('/orders', (req, res) => {
     );
 
     const orderId = orderResult.lastInsertRowid;
-    const insertItem = db.prepare('INSERT INTO order_items (orderId, productId, quantity, price) VALUES (?, ?, ?, ?)');
+    const insertItem = db.prepare(`
+      INSERT INTO order_items (orderId, productId, quantity, price, selectedSize, selectedColor, selectedStorage, selectedMattress) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
     const updateStock = db.prepare('UPDATE products SET stock = stock - ? WHERE id = ?');
 
     for (const item of items) {
-      insertItem.run(orderId, item.productId, item.quantity, item.price);
+      insertItem.run(
+        orderId, 
+        item.productId, 
+        item.quantity, 
+        item.price,
+        item.selectedSize || '',
+        item.selectedColor || '',
+        item.selectedStorage || '',
+        item.selectedMattress || ''
+      );
       updateStock.run(item.quantity, item.productId);
     }
 

@@ -29,23 +29,35 @@ export default function CartPage() {
         {/* Items */}
         <div className="lg:col-span-2 space-y-4">
           {items.map(item => (
-            <div key={item.productId} className="flex gap-4 bg-white p-4 rounded-xl border">
+            <div key={item.id} className="flex gap-4 bg-white p-4 rounded-xl border">
               <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden shrink-0">
                 <img src={item.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200'} alt={item.name} className="w-full h-full object-cover" />
               </div>
               <div className="flex-1 min-w-0">
                 <Link href={`/product/${item.slug}`} className="font-medium hover:text-accent transition line-clamp-1">{item.name || 'Product'}</Link>
+                
+                {/* Variant Selections */}
+                {(item.selectedSize || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-gray-500">
+                    {item.selectedSize && <span>Size: <strong className="text-gray-700">{item.selectedSize}</strong></span>}
+                    {item.selectedColor && <span>Color: <strong className="text-gray-700">{item.selectedColor}</strong></span>}
+                    {item.selectedStorage && <span>Storage: <strong className="text-gray-700">{item.selectedStorage}</strong></span>}
+                    {item.selectedMattress && <span>Mattress: <strong className="text-gray-700">{item.selectedMattress}</strong></span>}
+                  </div>
+                )}
+
                 <p className="text-accent font-bold mt-1">£{item.price}</p>
                 {item.stock !== undefined && item.stock <= 5 && item.stock > 0 && <p className="text-xs text-orange-500 mt-1">Only {item.stock} left</p>}
+                
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center border rounded-lg">
-                    <button onClick={() => updateQty(item.productId, item.quantity - 1)} className="p-2 hover:bg-gray-100 transition"><Minus size={14} /></button>
+                    <button onClick={() => updateQty(item.id, item.quantity - 1)} className="p-2 hover:bg-gray-100 transition"><Minus size={14} /></button>
                     <span className="w-10 text-center text-sm font-medium">{item.quantity}</span>
-                    <button onClick={() => updateQty(item.productId, item.quantity + 1)} className="p-2 hover:bg-gray-100 transition"><Plus size={14} /></button>
+                    <button onClick={() => updateQty(item.id, item.quantity + 1)} className="p-2 hover:bg-gray-100 transition"><Plus size={14} /></button>
                   </div>
                   <div className="flex items-center gap-4">
                     <p className="font-bold">£{(item.price * item.quantity).toFixed(2)}</p>
-                    <button onClick={() => remove(item.productId)} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
+                    <button onClick={() => remove(item.id)} className="text-gray-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
                   </div>
                 </div>
               </div>
@@ -59,7 +71,7 @@ export default function CartPage() {
             <h2 className="font-semibold text-lg mb-4">Order Summary</h2>
             <div className="space-y-3 text-sm">
               <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span className="font-medium">£{total.toFixed(2)}</span></div>
-              <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className="font-medium">{shipping === 0 ? 'Free' : `£${shipping}`}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className="font-medium">{shipping === 0 ? 'Free' : `£${shipping.toFixed(2)}`}</span></div>
               {shipping > 0 && <p className="text-xs text-green-600">Add £{(500 - total).toFixed(2)} more for free shipping</p>}
               <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="font-bold text-lg">£{(total + shipping).toFixed(2)}</span></div>
             </div>

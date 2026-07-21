@@ -33,6 +33,11 @@ CREATE TABLE IF NOT EXISTS products (
   review_count INTEGER DEFAULT 0,
   badge VARCHAR(50),
   featured BOOLEAN DEFAULT FALSE,
+  gallery_images JSONB DEFAULT '[]',
+  colors JSONB DEFAULT '[]',
+  sizes JSONB DEFAULT '[]',
+  storage_options JSONB DEFAULT '[]',
+  mattress_options JSONB DEFAULT '[]',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -117,7 +122,11 @@ CREATE TABLE IF NOT EXISTS order_items (
   order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
   product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
   quantity INTEGER NOT NULL DEFAULT 1,
-  price DECIMAL(10, 2) NOT NULL
+  price DECIMAL(10, 2) NOT NULL,
+  selected_size VARCHAR(100),
+  selected_color VARCHAR(100),
+  selected_storage VARCHAR(100),
+  selected_mattress VARCHAR(100)
 );
 
 -- 11. Cart
@@ -126,7 +135,12 @@ CREATE TABLE IF NOT EXISTS cart (
   user_id VARCHAR(255) REFERENCES users(id) ON DELETE CASCADE,
   product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
   quantity INTEGER NOT NULL DEFAULT 1,
-  UNIQUE(user_id, product_id)
+  selected_size VARCHAR(100),
+  selected_color VARCHAR(100),
+  selected_storage VARCHAR(100),
+  selected_mattress VARCHAR(100),
+  price DECIMAL(10, 2),
+  UNIQUE(user_id, product_id, selected_size, selected_color, selected_storage, selected_mattress)
 );
 
 -- 12. Contact Messages

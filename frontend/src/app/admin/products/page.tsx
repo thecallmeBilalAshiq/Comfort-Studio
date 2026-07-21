@@ -8,7 +8,26 @@ import toast from 'react-hot-toast';
 import { convertGoogleDriveUrl } from '@/lib/driveUrl';
 import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 
-interface AdminProduct { id: number; name: string; slug: string; description: string; price: number; originalPrice: number|null; image: string; categoryId: number; subcategoryId: number; stock: number; badge: string; featured: number; categoryName: string; }
+interface AdminProduct {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  originalPrice: number|null;
+  image: string;
+  categoryId: number;
+  subcategoryId: number;
+  stock: number;
+  badge: string;
+  featured: number;
+  categoryName: string;
+  galleryImages?: string[];
+  colors?: { name: string; hex: string }[];
+  sizes?: { name: string; priceModifier: number }[];
+  storageOptions?: { name: string; priceModifier: number }[];
+  mattressOptions?: { name: string; priceModifier: number }[];
+}
 interface AdminCategory { id: number; name: string; slug: string; subcategories: { id: number; name: string; slug: string; }[]; }
 
 export default function AdminProductsPage() {
@@ -21,7 +40,26 @@ export default function AdminProductsPage() {
   const [filter, setFilter] = useState('');
 
   const { upload, loading: uploadingImage } = useCloudinaryUpload();
-  const empty: AdminProduct = { id: 0, name: '', slug: '', description: '', price: 0, originalPrice: null, image: '', categoryId: 0, subcategoryId: 0, stock: 0, badge: '', featured: 0, categoryName: '' };
+  const empty: AdminProduct = { 
+    id: 0, 
+    name: '', 
+    slug: '', 
+    description: '', 
+    price: 0, 
+    originalPrice: null, 
+    image: '', 
+    categoryId: 0, 
+    subcategoryId: 0, 
+    stock: 0, 
+    badge: '', 
+    featured: 0, 
+    categoryName: '',
+    galleryImages: [],
+    colors: [],
+    sizes: [],
+    storageOptions: [],
+    mattressOptions: []
+  };
 
   useEffect(() => {
     const isAuthorized = user && (user.isAdmin || user.email?.toLowerCase() === 'comfortstudiouk@gmail.com');
@@ -47,12 +85,20 @@ export default function AdminProductsPage() {
         toast.success('Product updated');
       }
       setEditing(null); setIsCreating(false); loadData();
-    } catch { toast.error('Failed to save'); }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save');
+    }
   };
 
   const remove = async (id: number) => {
     if (!confirm('Delete this product?')) return;
-    try { await api.admin.deleteProduct(id); toast.success('Deleted'); loadData(); } catch { toast.error('Failed'); }
+    try { 
+      await api.admin.deleteProduct(id); 
+      toast.success('Deleted'); 
+      loadData(); 
+    } catch (err: any) { 
+      toast.error(err.message || 'Failed'); 
+    }
   };
 
   const setFormAndSlug = (name: string) => {
@@ -296,6 +342,377 @@ export default function AdminProductsPage() {
                     </div>
                   </div>
                   <p className="text-[10px] text-gray-400 mt-1">Supports pasting direct image links or selecting a file to upload directly to Cloudinary.</p>
+                </div>
+
+                {/* 1. Gallery Images */}
+                <div className="sm:col-span-2 border-t border-gray-100 pt-4">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Gallery Images (More Images)</label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-3">
+                    {(editing.galleryImages || []).map((img, idx) => (
+                      <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border bg-gray-50 group">
+                        <img src={img} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(editing.galleryImages || [])];
+                            updated.splice(idx, 1);
+                            setEditing({ ...editing, galleryImages: updated });
+                          }}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 hover:bg-red-600 transition"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      id="new-gallery-url"
+                      placeholder="Paste image link & press enter..."
+                      className="input-modern flex-1 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const target = e.target as HTMLInputElement;
+                          if (target.value.trim()) {
+                            setEditing({
+                              ...editing,
+                              galleryImages: [...(editing.galleryImages || []), target.value.trim()]
+                            });
+                            target.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <div className="relative shrink-0">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={async (e) => {
+                          const files = e.target.files;
+                          if (!files || files.length === 0) return;
+                          try {
+                            toast.loading(`Uploading ${files.length} images...`, { id: 'gallery-upload' });
+                            const urls: string[] = [];
+                            for (let i = 0; i < files.length; i++) {
+                              const url = await upload(files[i], 'comfort_products');
+                              urls.push(url);
+                            }
+                            setEditing({
+                              ...editing,
+                              galleryImages: [...(editing.galleryImages || []), ...urls]
+                            });
+                            toast.success('Added to gallery!', { id: 'gallery-upload' });
+                          } catch (err: any) {
+                            toast.error(err.message || 'Upload failed', { id: 'gallery-upload' });
+                          }
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <button
+                        type="button"
+                        className="btn-secondary py-2 px-3 text-xs flex items-center gap-1.5 h-full"
+                      >
+                        <Upload size={12} />
+                        Upload
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Colors */}
+                <div className="sm:col-span-2 border-t border-gray-100 pt-4">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Plush Colors</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {(editing.colors || []).map((col, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border rounded-full text-xs font-medium">
+                        <span className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0" style={{ backgroundColor: col.hex }} />
+                        <span>{col.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(editing.colors || [])];
+                            updated.splice(idx, 1);
+                            setEditing({ ...editing, colors: updated });
+                          }}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    {(editing.colors || []).length === 0 && (
+                      <p className="text-xs text-gray-400">No color options defined.</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <input
+                      type="text"
+                      id="color-name-input"
+                      placeholder="Color Name (e.g. Royal Blue)"
+                      className="input-modern flex-1 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const btn = document.getElementById('add-color-btn');
+                          if (btn) btn.click();
+                        }
+                      }}
+                    />
+                    <input
+                      type="color"
+                      id="color-hex-input"
+                      className="w-10 h-8 border rounded-lg cursor-pointer shrink-0 p-0"
+                      defaultValue="#000000"
+                    />
+                    <button
+                      type="button"
+                      id="add-color-btn"
+                      onClick={() => {
+                        const nameInput = document.getElementById('color-name-input') as HTMLInputElement;
+                        const hexInput = document.getElementById('color-hex-input') as HTMLInputElement;
+                        if (nameInput && nameInput.value.trim()) {
+                          setEditing({
+                            ...editing,
+                            colors: [...(editing.colors || []), { name: nameInput.value.trim(), hex: hexInput.value }]
+                          });
+                          nameInput.value = '';
+                        } else {
+                          toast.error('Please enter a color name');
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Sizes */}
+                <div className="sm:col-span-2 border-t border-gray-100 pt-4">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Sizes</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {(editing.sizes || []).map((sz, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border rounded-full text-xs font-medium">
+                        <span>{sz.name} ({sz.priceModifier >= 0 ? `+£${sz.priceModifier}` : `-£${Math.abs(sz.priceModifier)}`})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(editing.sizes || [])];
+                            updated.splice(idx, 1);
+                            setEditing({ ...editing, sizes: updated });
+                          }}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    {(editing.sizes || []).length === 0 && (
+                      <p className="text-xs text-gray-400">No size options defined.</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <input
+                      type="text"
+                      id="size-name-input"
+                      placeholder="Size Name (e.g. 5'0 King)"
+                      className="input-modern flex-1 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const btn = document.getElementById('add-size-btn');
+                          if (btn) btn.click();
+                        }
+                      }}
+                    />
+                    <input
+                      type="number"
+                      id="size-price-modifier"
+                      placeholder="Price Mod (£)"
+                      className="input-modern w-28 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const btn = document.getElementById('add-size-btn');
+                          if (btn) btn.click();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      id="add-size-btn"
+                      onClick={() => {
+                        const nameInput = document.getElementById('size-name-input') as HTMLInputElement;
+                        const modInput = document.getElementById('size-price-modifier') as HTMLInputElement;
+                        if (nameInput && nameInput.value.trim()) {
+                          setEditing({
+                            ...editing,
+                            sizes: [...(editing.sizes || []), { name: nameInput.value.trim(), priceModifier: parseFloat(modInput.value) || 0 }]
+                          });
+                          nameInput.value = '';
+                          modInput.value = '';
+                        } else {
+                          toast.error('Please enter a size name');
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Storage Options */}
+                <div className="sm:col-span-2 border-t border-gray-100 pt-4">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Storage Options</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {(editing.storageOptions || []).map((st, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border rounded-full text-xs font-medium">
+                        <span>{st.name} ({st.priceModifier >= 0 ? `+£${st.priceModifier}` : `-£${Math.abs(st.priceModifier)}`})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(editing.storageOptions || [])];
+                            updated.splice(idx, 1);
+                            setEditing({ ...editing, storageOptions: updated });
+                          }}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    {(editing.storageOptions || []).length === 0 && (
+                      <p className="text-xs text-gray-400">No storage options defined.</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <input
+                      type="text"
+                      id="storage-name-input"
+                      placeholder="Storage Type (e.g. 2 Drawers Same Side)"
+                      className="input-modern flex-1 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const btn = document.getElementById('add-storage-btn');
+                          if (btn) btn.click();
+                        }
+                      }}
+                    />
+                    <input
+                      type="number"
+                      id="storage-price-modifier"
+                      placeholder="Price Mod (£)"
+                      className="input-modern w-28 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const btn = document.getElementById('add-storage-btn');
+                          if (btn) btn.click();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      id="add-storage-btn"
+                      onClick={() => {
+                        const nameInput = document.getElementById('storage-name-input') as HTMLInputElement;
+                        const modInput = document.getElementById('storage-price-modifier') as HTMLInputElement;
+                        if (nameInput && nameInput.value.trim()) {
+                          setEditing({
+                            ...editing,
+                            storageOptions: [...(editing.storageOptions || []), { name: nameInput.value.trim(), priceModifier: parseFloat(modInput.value) || 0 }]
+                          });
+                          nameInput.value = '';
+                          modInput.value = '';
+                        } else {
+                          toast.error('Please enter a storage option name');
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* 5. Mattress Options */}
+                <div className="sm:col-span-2 border-t border-gray-100 pt-4 mb-4">
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Mattress Options</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {(editing.mattressOptions || []).map((mt, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border rounded-full text-xs font-medium">
+                        <span>{mt.name} ({mt.priceModifier >= 0 ? `+£${mt.priceModifier}` : `-£${Math.abs(mt.priceModifier)}`})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...(editing.mattressOptions || [])];
+                            updated.splice(idx, 1);
+                            setEditing({ ...editing, mattressOptions: updated });
+                          }}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    {(editing.mattressOptions || []).length === 0 && (
+                      <p className="text-xs text-gray-400">No mattress options defined.</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                    <input
+                      type="text"
+                      id="mattress-name-input"
+                      placeholder="Mattress Type (e.g. 1000 Pocket Sprung)"
+                      className="input-modern flex-1 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const btn = document.getElementById('add-mattress-btn');
+                          if (btn) btn.click();
+                        }
+                      }}
+                    />
+                    <input
+                      type="number"
+                      id="mattress-price-modifier"
+                      placeholder="Price Mod (£)"
+                      className="input-modern w-28 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const btn = document.getElementById('add-mattress-btn');
+                          if (btn) btn.click();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      id="add-mattress-btn"
+                      onClick={() => {
+                        const nameInput = document.getElementById('mattress-name-input') as HTMLInputElement;
+                        const modInput = document.getElementById('mattress-price-modifier') as HTMLInputElement;
+                        if (nameInput && nameInput.value.trim()) {
+                          setEditing({
+                            ...editing,
+                            mattressOptions: [...(editing.mattressOptions || []), { name: nameInput.value.trim(), priceModifier: parseFloat(modInput.value) || 0 }]
+                          });
+                          nameInput.value = '';
+                          modInput.value = '';
+                        } else {
+                          toast.error('Please enter a mattress option name');
+                        }
+                      }}
+                      className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition"
+                    >
+                      Add
+                    </button>
+                  </div>
                 </div>
               </div>
 

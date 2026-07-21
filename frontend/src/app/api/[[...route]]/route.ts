@@ -127,6 +127,18 @@ function mapCategory(c: any) {
   };
 }
 
+function safeParseJson(val: any, fallback: any = []) {
+  if (!val) return fallback;
+  if (typeof val === 'string') {
+    try {
+      return JSON.parse(val);
+    } catch {
+      return fallback;
+    }
+  }
+  return val;
+}
+
 function mapProduct(p: any) {
   if (!p) return null;
   return {
@@ -148,7 +160,32 @@ function mapProduct(p: any) {
     reviewCount: Number(p.review_count || 0),
     badge: p.badge || '',
     featured: !!p.featured,
-    createdAt: p.created_at
+    createdAt: p.created_at,
+    galleryImages: safeParseJson(p.gallery_images || p.galleryImages, []),
+    colors: safeParseJson(p.colors, []),
+    sizes: safeParseJson(p.sizes, []),
+    storageOptions: safeParseJson(p.storage_options || p.storageOptions, []),
+    mattressOptions: safeParseJson(p.mattress_options || p.mattressOptions, [])
+  };
+}
+
+function mapCartItem(item: any) {
+  if (!item) return null;
+  const prod = mapProduct(item.products);
+  return {
+    id: item.id,
+    userId: item.user_id,
+    productId: item.product_id,
+    quantity: Number(item.quantity),
+    name: prod?.name || '',
+    image: prod?.image || '',
+    price: item.price ? Number(item.price) : (prod?.price || 0),
+    slug: prod?.slug || '',
+    stock: prod?.stock || 0,
+    selectedSize: item.selected_size || '',
+    selectedColor: item.selected_color || '',
+    selectedStorage: item.selected_storage || '',
+    selectedMattress: item.selected_mattress || ''
   };
 }
 
@@ -237,7 +274,11 @@ function mapOrder(o: any) {
       image: item.products?.image || '',
       slug: item.products?.slug || '',
       quantity: Number(item.quantity),
-      price: Number(item.price)
+      price: Number(item.price),
+      selectedSize: item.selected_size || '',
+      selectedColor: item.selected_color || '',
+      selectedStorage: item.selected_storage || '',
+      selectedMattress: item.selected_mattress || ''
     })) || []
   };
 }
@@ -297,14 +338,19 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
             original_price: p.originalPrice,
             image: p.image,
             category_id: cat.id,
-            subcategory_id: null,
+            subcategory_id: p.subcategoryId || null,
             stock: p.stock,
             rating: p.rating,
             review_count: p.reviewCount,
             badge: p.badge,
             featured: p.id % 2 === 1,
             categories: { name: cat.name, slug: cat.slug },
-            subcategories: null,
+            subcategories: p.subcategorySlug ? { name: p.subcategoryName, slug: p.subcategorySlug } : null,
+            gallery_images: p.galleryImages || [],
+            colors: p.colors || [],
+            sizes: p.sizes || [],
+            storage_options: p.storageOptions || [],
+            mattress_options: p.mattressOptions || [],
             created_at: new Date().toISOString()
           });
         }
@@ -571,17 +617,7 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
         
       if (error) throw error;
       
-      const formattedItems = (data || []).map((item: any) => ({
-        id: item.id,
-        productId: item.product_id,
-        quantity: Number(item.quantity),
-        userId: item.user_id,
-        productName: item.products?.name || '',
-        price: Number(item.products?.price || 0),
-        productImage: item.products?.image || '',
-        stock: Number(item.products?.stock || 0)
-      }));
-      return NextResponse.json(formattedItems);
+      return NextResponse.json((data || []).map(mapCartItem));
     } catch (e: any) {
       const status = e.message === 'No token provided' || e.message === 'Authentication failed' ? 401 : 500;
       return NextResponse.json({ error: e.message }, { status });
@@ -812,7 +848,9 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
         return NextResponse.json(data?.value || {});
       }
     } catch (e: any) {
-      return NextResponse.json({ error: e.message }, { status: 403 });
+      console.error('[Admin GET Endpoint Error]:', e);
+      const isAuth = e.message === 'No token provided' || e.message === 'Authentication failed' || e.message === 'Admin access required';
+      return NextResponse.json({ error: e.message || 'Internal error' }, { status: isAuth ? 403 : 500 });
     }
   }
 
@@ -840,15 +878,24 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
   if (pathSegments[0] === 'cart') {
     try {
       const user = await authenticate(req);
-      const { productId, quantity } = await req.json();
+      const { productId, quantity, size, color, storage, mattress, price } = await req.json();
       if (!productId) return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
 
-      // Check if product exists in cart
+      const selSize = size || '';
+      const selColor = color || '';
+      const selStorage = storage || '';
+      const selMattress = mattress || '';
+
+      // Check if product exists in cart with matching configuration
       const { data: existing, error: findError } = await supabase
         .from('cart')
         .select('*')
         .eq('user_id', user.id)
         .eq('product_id', productId)
+        .eq('selected_size', selSize)
+        .eq('selected_color', selColor)
+        .eq('selected_storage', selStorage)
+        .eq('selected_mattress', selMattress)
         .maybeSingle();
 
       if (findError) throw findError;
@@ -866,7 +913,12 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           .insert({
             user_id: user.id,
             product_id: productId,
-            quantity: Number(quantity) || 1
+            quantity: Number(quantity) || 1,
+            selected_size: selSize,
+            selected_color: selColor,
+            selected_storage: selStorage,
+            selected_mattress: selMattress,
+            price: price ? Number(price) : null
           });
         if (insertError) throw insertError;
       }
@@ -878,16 +930,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
         .eq('user_id', user.id);
       if (getError) throw getError;
       
-      return NextResponse.json((cartData || []).map((item: any) => ({
-        id: item.id,
-        productId: item.product_id,
-        quantity: item.quantity,
-        userId: item.user_id,
-        productName: item.products?.name || '',
-        price: Number(item.products?.price || 0),
-        productImage: item.products?.image || '',
-        stock: Number(item.products?.stock || 0)
-      })));
+      return NextResponse.json((cartData || []).map(mapCartItem));
     } catch (e: any) {
       const status = e.message === 'No token provided' || e.message === 'Authentication failed' ? 401 : 500;
       return NextResponse.json({ error: e.message }, { status });
@@ -963,7 +1006,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
         const { data: dbProd, error: pErr } = await supabase
           .from('products')
           .select('*')
-          .eq('id', item.productId)
+          .eq('id', Number(item.productId))
           .maybeSingle();
           
         if (!pErr && dbProd) {
@@ -992,7 +1035,8 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           
         if (!prod) throw new Error(`Product ${item.productId} not found`);
         
-        subtotal += Number(prod.price) * (Number(item.quantity) || 1);
+        const itemPrice = item.price ? Number(item.price) : Number(prod.price);
+        subtotal += itemPrice * (Number(item.quantity) || 1);
         
         // Reduce stock in products table only if the product exists in the DB
         if (isDbProduct) {
@@ -1006,7 +1050,11 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
         orderItemsToInsert.push({
           product_id: Number(item.productId),
           quantity: Number(item.quantity) || 1,
-          price: Number(prod.price)
+          price: itemPrice,
+          selected_size: item.selectedSize || '',
+          selected_color: item.selectedColor || '',
+          selected_storage: item.selectedStorage || '',
+          selected_mattress: item.selectedMattress || ''
         });
       }
 
@@ -1140,7 +1188,12 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
             rating: Number(prod.rating || 0),
             review_count: Number(prod.reviewCount || 0),
             badge: prod.badge || '',
-            featured: prod.featured === true
+            featured: prod.featured === true,
+            gallery_images: prod.galleryImages || [],
+            colors: prod.colors || [],
+            sizes: prod.sizes || [],
+            storage_options: prod.storageOptions || [],
+            mattress_options: prod.mattressOptions || []
           })
           .select()
           .single();
@@ -1222,7 +1275,9 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
         return NextResponse.json(mapScrollBanner(data));
       }
     } catch (e: any) {
-      return NextResponse.json({ error: e.message }, { status: 403 });
+      console.error('[Admin POST Endpoint Error]:', e);
+      const isAuth = e.message === 'No token provided' || e.message === 'Authentication failed' || e.message === 'Admin access required';
+      return NextResponse.json({ error: e.message || 'Internal error' }, { status: isAuth ? 403 : 500 });
     }
   }
 
@@ -1230,18 +1285,18 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
 }
 
 async function handlePut(pathSegments: string[], req: NextRequest) {
-  // PUT /api/cart/:productId
+  // PUT /api/cart/:cartItemId
   if (pathSegments[0] === 'cart' && pathSegments[1]) {
     try {
       const user = await authenticate(req);
-      const productId = Number(pathSegments[1]);
+      const cartItemId = Number(pathSegments[1]);
       const { quantity } = await req.json();
 
       const { error: updateError } = await supabase
         .from('cart')
         .update({ quantity: Number(quantity) })
         .eq('user_id', user.id)
-        .eq('product_id', productId);
+        .eq('id', cartItemId);
 
       if (updateError) throw updateError;
 
@@ -1252,16 +1307,7 @@ async function handlePut(pathSegments: string[], req: NextRequest) {
         
       if (getError) throw getError;
       
-      return NextResponse.json((data || []).map((item: any) => ({
-        id: item.id,
-        productId: item.product_id,
-        quantity: item.quantity,
-        userId: item.user_id,
-        productName: item.products?.name || '',
-        price: Number(item.products?.price || 0),
-        productImage: item.products?.image || '',
-        stock: Number(item.products?.stock || 0)
-      })));
+      return NextResponse.json((data || []).map(mapCartItem));
     } catch (e: any) {
       const status = e.message === 'No token provided' || e.message === 'Authentication failed' ? 401 : 500;
       return NextResponse.json({ error: e.message }, { status });
@@ -1292,6 +1338,11 @@ async function handlePut(pathSegments: string[], req: NextRequest) {
         if (data.stock !== undefined) mappedData.stock = Number(data.stock);
         if (data.badge !== undefined) mappedData.badge = data.badge;
         if (data.featured !== undefined) mappedData.featured = data.featured === true;
+        if (data.galleryImages !== undefined) mappedData.gallery_images = data.galleryImages || [];
+        if (data.colors !== undefined) mappedData.colors = data.colors || [];
+        if (data.sizes !== undefined) mappedData.sizes = data.sizes || [];
+        if (data.storageOptions !== undefined) mappedData.storage_options = data.storageOptions || [];
+        if (data.mattressOptions !== undefined) mappedData.mattress_options = data.mattressOptions || [];
 
         const { error } = await supabase.from('products').update(mappedData).eq('id', id);
         if (error) throw error;
@@ -1391,7 +1442,9 @@ async function handlePut(pathSegments: string[], req: NextRequest) {
         return NextResponse.json({ success: true });
       }
     } catch (e: any) {
-      return NextResponse.json({ error: e.message }, { status: 403 });
+      console.error('[Admin PUT Endpoint Error]:', e);
+      const isAuth = e.message === 'No token provided' || e.message === 'Authentication failed' || e.message === 'Admin access required';
+      return NextResponse.json({ error: e.message || 'Internal error' }, { status: isAuth ? 403 : 500 });
     }
   }
 
@@ -1399,17 +1452,17 @@ async function handlePut(pathSegments: string[], req: NextRequest) {
 }
 
 async function handleDelete(pathSegments: string[], req: NextRequest) {
-  // DELETE /api/cart/:productId
+  // DELETE /api/cart/:cartItemId
   if (pathSegments[0] === 'cart' && pathSegments[1]) {
     try {
       const user = await authenticate(req);
-      const productId = Number(pathSegments[1]);
+      const cartItemId = Number(pathSegments[1]);
 
       const { error: deleteError } = await supabase
         .from('cart')
         .delete()
         .eq('user_id', user.id)
-        .eq('product_id', productId);
+        .eq('id', cartItemId);
 
       if (deleteError) throw deleteError;
 
@@ -1420,16 +1473,7 @@ async function handleDelete(pathSegments: string[], req: NextRequest) {
         
       if (getError) throw getError;
       
-      return NextResponse.json((data || []).map((item: any) => ({
-        id: item.id,
-        productId: item.product_id,
-        quantity: item.quantity,
-        userId: item.user_id,
-        productName: item.products?.name || '',
-        price: Number(item.products?.price || 0),
-        productImage: item.products?.image || '',
-        stock: Number(item.products?.stock || 0)
-      })));
+      return NextResponse.json((data || []).map(mapCartItem));
     } catch (e: any) {
       const status = e.message === 'No token provided' || e.message === 'Authentication failed' ? 401 : 500;
       return NextResponse.json({ error: e.message }, { status });
@@ -1492,7 +1536,9 @@ async function handleDelete(pathSegments: string[], req: NextRequest) {
         return NextResponse.json({ success: true });
       }
     } catch (e: any) {
-      return NextResponse.json({ error: e.message }, { status: 403 });
+      console.error('[Admin DELETE Endpoint Error]:', e);
+      const isAuth = e.message === 'No token provided' || e.message === 'Authentication failed' || e.message === 'Admin access required';
+      return NextResponse.json({ error: e.message || 'Internal error' }, { status: isAuth ? 403 : 500 });
     }
   }
 

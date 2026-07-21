@@ -102,6 +102,11 @@ export async function initDB() {
       badge TEXT DEFAULT '',
       featured INTEGER DEFAULT 0,
       createdAt TEXT DEFAULT (datetime('now')),
+      gallery_images TEXT DEFAULT '[]',
+      colors TEXT DEFAULT '[]',
+      sizes TEXT DEFAULT '[]',
+      storage_options TEXT DEFAULT '[]',
+      mattress_options TEXT DEFAULT '[]',
       FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE SET NULL,
       FOREIGN KEY (subcategoryId) REFERENCES subcategories(id) ON DELETE SET NULL
     )
@@ -133,6 +138,10 @@ export async function initDB() {
       productId INTEGER NOT NULL,
       quantity INTEGER DEFAULT 1,
       price REAL NOT NULL,
+      selectedSize TEXT,
+      selectedColor TEXT,
+      selectedStorage TEXT,
+      selectedMattress TEXT,
       FOREIGN KEY (orderId) REFERENCES orders(id) ON DELETE CASCADE,
       FOREIGN KEY (productId) REFERENCES products(id)
     )
@@ -185,6 +194,11 @@ export async function initDB() {
       userId INTEGER NOT NULL,
       productId INTEGER NOT NULL,
       quantity INTEGER DEFAULT 1,
+      selectedSize TEXT,
+      selectedColor TEXT,
+      selectedStorage TEXT,
+      selectedMattress TEXT,
+      price REAL,
       FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
     )
@@ -224,6 +238,24 @@ export async function initDB() {
   try { db.run("ALTER TABLE orders ADD COLUMN paymentScreenshot TEXT DEFAULT ''"); } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'local'"); } catch {}
   try { db.run("ALTER TABLE users ADD COLUMN avatar TEXT DEFAULT ''"); } catch {}
+
+  // Option variations migrations
+  try { db.run("ALTER TABLE products ADD COLUMN gallery_images TEXT DEFAULT '[]'"); } catch {}
+  try { db.run("ALTER TABLE products ADD COLUMN colors TEXT DEFAULT '[]'"); } catch {}
+  try { db.run("ALTER TABLE products ADD COLUMN sizes TEXT DEFAULT '[]'"); } catch {}
+  try { db.run("ALTER TABLE products ADD COLUMN storage_options TEXT DEFAULT '[]'"); } catch {}
+  try { db.run("ALTER TABLE products ADD COLUMN mattress_options TEXT DEFAULT '[]'"); } catch {}
+
+  try { db.run("ALTER TABLE order_items ADD COLUMN selectedSize TEXT"); } catch {}
+  try { db.run("ALTER TABLE order_items ADD COLUMN selectedColor TEXT"); } catch {}
+  try { db.run("ALTER TABLE order_items ADD COLUMN selectedStorage TEXT"); } catch {}
+  try { db.run("ALTER TABLE order_items ADD COLUMN selectedMattress TEXT"); } catch {}
+
+  try { db.run("ALTER TABLE cart ADD COLUMN selectedSize TEXT"); } catch {}
+  try { db.run("ALTER TABLE cart ADD COLUMN selectedColor TEXT"); } catch {}
+  try { db.run("ALTER TABLE cart ADD COLUMN selectedStorage TEXT"); } catch {}
+  try { db.run("ALTER TABLE cart ADD COLUMN selectedMattress TEXT"); } catch {}
+  try { db.run("ALTER TABLE cart ADD COLUMN price REAL"); } catch {}
 
   // Migrate orders table to make userId nullable if it was originally NOT NULL
   try {

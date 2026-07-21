@@ -43,6 +43,11 @@ export interface Product {
   subcategoryName?: string;
   subcategorySlug?: string;
   related?: Product[];
+  galleryImages?: string[];
+  colors?: { name: string; hex: string }[];
+  sizes?: { name: string; priceModifier: number }[];
+  storageOptions?: { name: string; priceModifier: number }[];
+  mattressOptions?: { name: string; priceModifier: number }[];
 }
 
 export interface Banner {
@@ -94,6 +99,10 @@ export interface CartItem {
   price: number;
   slug: string;
   stock?: number;
+  selectedSize?: string;
+  selectedColor?: string;
+  selectedStorage?: string;
+  selectedMattress?: string;
 }
 
 export interface Order {
@@ -122,6 +131,10 @@ export interface OrderItem {
   name: string;
   image: string;
   slug: string;
+  selectedSize?: string;
+  selectedColor?: string;
+  selectedStorage?: string;
+  selectedMattress?: string;
 }
 
 export interface FooterData {
