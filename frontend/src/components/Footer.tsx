@@ -16,10 +16,10 @@ export default function Footer() {
           tagline: data.tagline || 'Transforming houses into homes with premium furniture that combines style, comfort, and quality craftsmanship.',
           copyright: data.copyright || `© ${new Date().getFullYear()} Comfort Studio. All rights reserved.`,
           contact: {
-            address: data.address || '123 Furniture Ave, Design District',
+            address: data.address || '',
             phone: data.phone || '+44 7983 630088',
             email: data.email || 'comfortstudiouk@gmail.com',
-            hours: data.hours || 'Mon - Sat: 9:00 AM - 8:00 PM',
+            hours: data.hours || ' ',
           },
           socialLinks: [
             { icon: 'Facebook', url: 'https://www.facebook.com/comfortstudiouk' },
@@ -36,10 +36,10 @@ export default function Footer() {
         tagline: 'Transforming houses into homes with premium furniture that combines style, comfort, and quality craftsmanship.',
         copyright: `© ${new Date().getFullYear()} Comfort Studio. All rights reserved.`,
         contact: {
-          address: '123 Furniture Ave, Design District',
+          address: '',
           phone: '+44 7983 630088',
           email: 'comfortstudiouk@gmail.com',
-          hours: 'Mon - Sat: 9:00 AM - 8:00 PM',
+          hours: ' ',
         },
         socialLinks: [
           { icon: 'Facebook', url: 'https://www.facebook.com/profile.php?id=61561167710692' },

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase';
 import { mockCatalog } from '@/data/mockCatalog';
-import { sendOrderConfirmationEmail } from '@/lib/email';
+import { sendOrderConfirmationEmail, sendContactFormEmail } from '@/lib/email';
 
 // Lazy proxy for supabase client to prevent build-time crashes when env vars are missing
 const supabase = new Proxy({}, {
@@ -904,6 +904,12 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
       .single();
       
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    // Send email notification to comfortstudiouk@gmail.com
+    sendContactFormEmail({ name, email, subject: subject || '', message }).catch((emailErr) => {
+      console.error('[Contact Email Dispatch Error]:', emailErr);
+    });
+
     return NextResponse.json({ id: data.id, success: true });
   }
 

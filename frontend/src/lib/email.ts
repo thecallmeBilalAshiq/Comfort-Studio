@@ -216,3 +216,98 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData) {
     console.log(`[Email Dispatch]: GMAIL_APP_PASSWORD not configured in env. Order confirmation details prepared for ${customerEmail} (${order.orderNumber}).`);
   }
 }
+
+export interface ContactFormEmailData {
+  name: string;
+  email: string;
+  subject?: string;
+  message: string;
+}
+
+export async function sendContactFormEmail(contactData: ContactFormEmailData) {
+  const adminRecipient = 'comfortstudiouk@gmail.com';
+  const smtpUser = process.env.SMTP_USER || process.env.GMAIL_USER || 'comfortstudiouk@gmail.com';
+  const smtpPass = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '';
+
+  const htmlContent = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <title>New Contact Message - Comfort Studio</title>
+  </head>
+  <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f7f4f0; color: #333333; margin: 0; padding: 20px 0;">
+    <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); border: 1px solid #e8dfd8;">
+      <div style="background-color: #5d4037; padding: 30px 20px; text-align: center; color: #ffffff;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 300; letter-spacing: 2px; text-transform: uppercase;">Comfort Studio</h1>
+        <p style="margin: 4px 0 0 0; font-size: 12px; color: #c8956c; letter-spacing: 1px;">NEW CONTACT FORM SUBMISSION</p>
+      </div>
+
+      <div style="padding: 30px 25px;">
+        <div style="background-color: #faf7f4; border-left: 4px solid #c8956c; padding: 15px 20px; margin-bottom: 20px; border-radius: 4px;">
+          <h2 style="margin: 0 0 6px 0; font-size: 16px; color: #5d4037;">You have received a new contact message!</h2>
+          <p style="margin: 0; font-size: 13px; color: #666666;">A customer has submitted a message on comfortstudio.co.uk.</p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 25px;">
+          <tr>
+            <td style="padding: 8px 0; color: #777777; width: 130px;">Sender Name:</td>
+            <td style="padding: 8px 0; font-weight: bold; color: #333333;">${contactData.name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #777777;">Sender Email:</td>
+            <td style="padding: 8px 0; font-weight: bold; color: #333333;"><a href="mailto:${contactData.email}" style="color: #c8956c;">${contactData.email}</a></td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 0; color: #777777;">Subject:</td>
+            <td style="padding: 8px 0; font-weight: bold; color: #333333;">${contactData.subject || 'General Inquiry'}</td>
+          </tr>
+        </table>
+
+        <div style="background-color: #faf7f4; border: 1px solid #ebdcd0; border-radius: 8px; padding: 20px;">
+          <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #5d4037; text-transform: uppercase; letter-spacing: 1px;">Message Content:</h4>
+          <p style="margin: 0; font-size: 14px; color: #333333; line-height: 1.6; white-space: pre-wrap;">${contactData.message}</p>
+        </div>
+
+        <div style="margin-top: 25px; text-align: center;">
+          <a href="mailto:${contactData.email}?subject=Re: ${encodeURIComponent(contactData.subject || 'Inquiry from Comfort Studio')}" style="display: inline-block; background-color: #5d4037; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-size: 13px; font-weight: bold; letter-spacing: 1px;">Reply to Customer</a>
+        </div>
+      </div>
+
+      <div style="background-color: #faf7f4; padding: 18px; text-align: center; font-size: 12px; color: #888888; border-top: 1px solid #ebdcd0;">
+        &copy; ${new Date().getFullYear()} Comfort Studio Contact System
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+
+  if (smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"Comfort Studio Website" <${smtpUser}>`,
+        to: adminRecipient,
+        replyTo: contactData.email,
+        subject: `[Contact Form] ${contactData.subject || 'New Message'} from ${contactData.name}`,
+        html: htmlContent,
+      });
+
+      console.log(`[Contact Email Sent]: Message from ${contactData.email} delivered to ${adminRecipient}`);
+    } catch (err: any) {
+      console.error('[Contact Email SMTP Error]:', err.message || err);
+    }
+  } else {
+    console.log(`[Contact Email Prepared]: GMAIL_APP_PASSWORD not set. Message from ${contactData.name} (${contactData.email}) logged for ${adminRecipient}.`);
+  }
+}
+

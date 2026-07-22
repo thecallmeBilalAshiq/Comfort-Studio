@@ -80,10 +80,10 @@ async function seed() {
     db.prepare(`INSERT INTO footer (id, tagline, copyright, address, phone, email, hours, socialLinks, quickLinks, customerServiceLinks, paymentIcons) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
       'Premium furniture for modern living. Quality craftsmanship, timeless design, and comfort that transforms your home.',
       '2026 Comfort Studio. All rights reserved.',
-      '123 Furniture Ave, Design District',
+      '',
       '+44 7983 630088',
       'comfortstudiouk@gmail.com',
-      'Mon - Sat: 9:00 AM - 8:00 PM',
+      ' ',
       JSON.stringify([{ icon: 'fab fa-facebook-f', url: '#' }, { icon: 'fab fa-instagram', url: '#' }, { icon: 'fab fa-pinterest', url: '#' }, { icon: 'fab fa-twitter', url: '#' }]),
       JSON.stringify([{ label: 'Shop All', href: '/shop' }, { label: 'Sofas', href: '/shop?category=sofas' }, { label: 'Living Room', href: '/shop?category=living-room' }, { label: 'Dining Room', href: '/shop?category=dining-room' }, { label: 'Office', href: '/shop?category=office' }]),
       JSON.stringify([{ label: 'Contact Us', href: '/contact' }, { label: 'FAQs', href: '#' }, { label: 'Shipping Policy', href: '#' }, { label: 'Returns & Exchanges', href: '#' }, { label: 'Warranty', href: '#' }]),

@@ -113,22 +113,55 @@ export default function AdminOrdersPage() {
     const headers = [
       'Order ID',
       'Order Number',
+      'Created Date',
       'Customer Name',
       'Customer Email',
-      'Created At',
-      'Status',
-      'Total Amount (£)',
-      'Items Detail',
-      'Shipping Recipient',
+      'Customer Phone',
+      'Shipping Name',
       'Shipping City',
       'Shipping Postal Code',
-      'Shipping Email',
       'Shipping Phone',
-      'Payment Screenshot Link'
+      'Delivery Address Location',
+      'Status',
+      'Payment Method',
+      'Ordered Items (Full Breakdown)',
+      'Item Names',
+      'Size',
+      'Colour',
+      'Storage Option',
+      'Mattress Option',
+      'Subtotal (£)',
+      'Shipping Fee (£)',
+      'Total Amount (£)',
+      'Payment Proof Screenshot Link'
     ];
 
     const rows = filtered.map(o => {
-      const itemsDetail = o.items ? o.items.map((item: any) => `${item.name} (Qty: ${item.quantity}, Price: £${Number(item.price).toFixed(2)})`).join('; ') : '';
+      const itemsList = o.items || [];
+      
+      const itemNames = itemsList.map((i: any) => i.name || i.productName).filter(Boolean).join(', ') || '';
+      const sizes = itemsList.map((i: any) => i.selectedSize).filter(Boolean).join(', ') || '';
+      const colours = itemsList.map((i: any) => i.selectedColor).filter(Boolean).join(', ') || '';
+      const storageOptions = itemsList.map((i: any) => i.selectedStorage).filter(Boolean).join(', ') || '';
+      const mattressOptions = itemsList.map((i: any) => i.selectedMattress).filter(Boolean).join(', ') || '';
+
+      const itemsFullBreakdown = itemsList.map((item: any) => {
+        const specs = [];
+        if (item.selectedSize) specs.push(`Size: ${item.selectedSize}`);
+        if (item.selectedColor) specs.push(`Colour: ${item.selectedColor}`);
+        if (item.selectedStorage) specs.push(`Storage: ${item.selectedStorage}`);
+        if (item.selectedMattress) specs.push(`Mattress: ${item.selectedMattress}`);
+        const specStr = specs.length > 0 ? ` [${specs.join(' | ')}]` : '';
+        return `${item.name || item.productName || 'Product'}${specStr} (Qty: ${item.quantity}, Price: £${Number(item.price).toFixed(2)})`;
+      }).join('; ');
+
+      const subtotal = itemsList.length > 0
+        ? itemsList.reduce((acc: number, i: any) => acc + (Number(i.price) * Number(i.quantity)), 0).toFixed(2)
+        : Number(o.total).toFixed(2);
+
+      const deliveryLocation = [o.shippingCity, o.shippingPostalCode || o.shippingZip].filter(Boolean).join(', ');
+      const paymentMethod = o.paymentScreenshot ? 'Bank Pay' : (o.paymentMethod || 'Cash on Delivery');
+
       const screenshotLink = o.paymentScreenshot 
         ? (o.paymentScreenshot.startsWith('http') ? o.paymentScreenshot : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${o.paymentScreenshot}`)
         : '';
@@ -136,17 +169,26 @@ export default function AdminOrdersPage() {
       return [
         o.id,
         o.orderNumber || `Order #${o.id}`,
-        o.customerName,
-        o.customerEmail,
         new Date(o.createdAt).toLocaleString(),
+        o.customerName || o.shippingName || 'Guest',
+        o.customerEmail || o.shippingEmail || '',
+        o.shippingPhone || '',
+        o.shippingName || o.customerName || 'Guest',
+        o.shippingCity || '',
+        o.shippingPostalCode || o.shippingZip || '',
+        o.shippingPhone || '',
+        deliveryLocation,
         o.status,
+        paymentMethod,
+        itemsFullBreakdown,
+        itemNames,
+        sizes,
+        colours,
+        storageOptions,
+        mattressOptions,
+        subtotal,
+        Number(o.shipping || 0).toFixed(2),
         Number(o.total).toFixed(2),
-        itemsDetail,
-        o.shippingName,
-        o.shippingCity,
-        o.shippingPostalCode || o.shippingZip,
-        o.shippingEmail,
-        o.shippingPhone,
         screenshotLink
       ];
     });
@@ -170,7 +212,7 @@ export default function AdminOrdersPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `orders_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `comfort_studio_orders_${new Date().toISOString().slice(0, 10)}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();

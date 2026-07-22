@@ -70,6 +70,13 @@ function PaymentUploadContent() {
                 <button type="button" onClick={() => { navigator.clipboard.writeText('Comfort Studio'); toast.success('Copied!'); }} className="text-gray-400 hover:text-accent transition"><Copy size={12} /></button>
               </span>
             </div>
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400 font-medium">Sort Number:</span>
+              <span className="font-bold text-brand flex items-center gap-1.5">
+                60-84-64
+                <button type="button" onClick={() => { navigator.clipboard.writeText('Comfort Studio'); toast.success('Copied!'); }} className="text-gray-400 hover:text-accent transition"><Copy size={12} /></button>
+              </span>
+            </div>
           </div>
         </div>
 
