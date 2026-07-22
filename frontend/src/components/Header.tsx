@@ -91,8 +91,8 @@ export default function Header() {
           </div>
           <div className="hidden sm:flex items-center gap-4">
             <span className="text-[10px] bg-accent/20 text-accent px-2 py-0.5 rounded font-bold uppercase tracking-wider">Free Delivery</span>
-            <span className="text-white/30">|</span>
-            <span className="font-semibold text-white/70"> </span>
+            <span className="text-white/30"></span>
+            <span className="font-semibold text-white/70"> United Kingdom (UK) </span>
           </div>
         </div>
       </div>

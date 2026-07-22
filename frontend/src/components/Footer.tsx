@@ -127,12 +127,6 @@ export default function Footer() {
                   </a>
                 </div>
               )}
-              {footer?.contact?.hours && (
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="shrink-0" />
-                  <span>{footer.contact.hours}</span>
-                </div>
-              )}
             </div>
             
             {/* Connect With Us */}

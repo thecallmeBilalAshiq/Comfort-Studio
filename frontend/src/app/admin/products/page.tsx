@@ -519,7 +519,7 @@ export default function AdminProductsPage() {
                       type="text"
                       id="size-name-input"
                       placeholder="Size Name (e.g. 5'0 King)"
-                      className="input-modern flex-1 text-xs"
+                      className="input-modern w-10 text-xs"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
@@ -565,81 +565,6 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
-                {/* 4. Storage Options */}
-                <div className="sm:col-span-2 border-t border-gray-100 pt-4">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Storage Options</label>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {(editing.storageOptions || []).map((st, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border rounded-full text-xs font-medium">
-                        <span>{st.name} ({st.priceModifier >= 0 ? `+£${st.priceModifier}` : `-£${Math.abs(st.priceModifier)}`})</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const updated = [...(editing.storageOptions || [])];
-                            updated.splice(idx, 1);
-                            setEditing({ ...editing, storageOptions: updated });
-                          }}
-                          className="text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    ))}
-                    {(editing.storageOptions || []).length === 0 && (
-                      <p className="text-xs text-gray-400">No storage options defined.</p>
-                    )}
-                  </div>
-                  <div className="flex gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
-                    <input
-                      type="text"
-                      id="storage-name-input"
-                      placeholder="Storage Type (e.g. 2 Drawers Same Side)"
-                      className="input-modern flex-1 text-xs"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const btn = document.getElementById('add-storage-btn');
-                          if (btn) btn.click();
-                        }
-                      }}
-                    />
-                    <input
-                      type="number"
-                      id="storage-price-modifier"
-                      placeholder="Price Mod (£)"
-                      className="input-modern w-28 text-xs"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const btn = document.getElementById('add-storage-btn');
-                          if (btn) btn.click();
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      id="add-storage-btn"
-                      onClick={() => {
-                        const nameInput = document.getElementById('storage-name-input') as HTMLInputElement;
-                        const modInput = document.getElementById('storage-price-modifier') as HTMLInputElement;
-                        if (nameInput && nameInput.value.trim()) {
-                          setEditing({
-                            ...editing,
-                            storageOptions: [...(editing.storageOptions || []), { name: nameInput.value.trim(), priceModifier: parseFloat(modInput.value) || 0 }]
-                          });
-                          nameInput.value = '';
-                          modInput.value = '';
-                        } else {
-                          toast.error('Please enter a storage option name');
-                        }
-                      }}
-                      className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-
                 {/* 5. Mattress Options */}
                 <div className="sm:col-span-2 border-t border-gray-100 pt-4 mb-4">
                   <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Mattress Options</label>
@@ -669,7 +594,7 @@ export default function AdminProductsPage() {
                       type="text"
                       id="mattress-name-input"
                       placeholder="Mattress Type (e.g. 1000 Pocket Sprung)"
-                      className="input-modern flex-1 text-xs"
+                      className="input-modern w-10 text-xs"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();

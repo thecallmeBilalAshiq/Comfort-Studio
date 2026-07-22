@@ -45,11 +45,7 @@ export default function ContactPage() {
             </div>
             <div className="glass-card p-6 flex items-start gap-4">
               <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center text-accent shrink-0"><MapPin size={20} /></div>
-              <div><h3 className="font-semibold">Address</h3><p className="text-gray-500 text-sm mt-1"></p></div>
-            </div>
-            <div className="glass-card p-6 flex items-start gap-4">
-              <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center text-accent shrink-0"><Clock size={20} /></div>
-              <div><h3 className="font-semibold">Hours</h3><p className="text-gray-500 text-sm mt-1"> </p></div>
+              <div><h3 className="font-semibold">Address</h3><p className="text-gray-500 text-sm mt-1"> United Kingdom (UK) </p></div>
             </div>
           </div>
         </FadeInLeft>
