@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase';
 import { mockCatalog } from '@/data/mockCatalog';
 import { sendOrderConfirmationEmail, sendContactFormEmail } from '@/lib/email';
+import { convertGoogleDriveUrl } from '@/lib/driveUrl';
 
 // Lazy proxy for supabase client to prevent build-time crashes when env vars are missing
 const supabase = new Proxy({}, {
@@ -482,11 +483,20 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
     let useFallback = false;
 
     try {
-      const { data: cats, error: catsErr } = await supabase
+      let { data: cats, error: catsErr } = await supabase
         .from('categories')
-        .select('*, subcategories(id, name, slug)')
+        .select('*, subcategories(id, name, slug, image)')
         .order('name');
       
+      if (catsErr) {
+        const retry = await supabase
+          .from('categories')
+          .select('*, subcategories(id, name, slug)')
+          .order('name');
+        cats = retry.data;
+        catsErr = retry.error;
+      }
+
       if (catsErr) throw catsErr;
       if (cats && cats.length > 0) {
         // Count products for each category
@@ -771,10 +781,20 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
       }
 
       if (sub === 'categories') {
-        const { data: cats, error: catsErr } = await supabase
+        let { data: cats, error: catsErr } = await supabase
           .from('categories')
-          .select('*, subcategories(id, name, slug)')
+          .select('*, subcategories(id, name, slug, image)')
           .order('name');
+
+        if (catsErr) {
+          const retry = await supabase
+            .from('categories')
+            .select('*, subcategories(id, name, slug)')
+            .order('name');
+          cats = retry.data;
+          catsErr = retry.error;
+        }
+
         if (catsErr) throw catsErr;
 
         const { data: countData, error: countErr } = await supabase
@@ -1318,17 +1338,35 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           const subs = cat.subcategories.map((s: any) => ({
             category_id: data.id,
             name: s.name,
-            slug: s.slug
+            slug: s.slug,
+            image: s.image ? convertGoogleDriveUrl(s.image) : (s.image || '')
           }));
-          await supabase.from('subcategories').insert(subs);
+          const { error: subErr } = await supabase.from('subcategories').insert(subs);
+          if (subErr) {
+            const subsNoImg = cat.subcategories.map((s: any) => ({
+              category_id: data.id,
+              name: s.name,
+              slug: s.slug
+            }));
+            await supabase.from('subcategories').insert(subsNoImg);
+          }
         }
         
         // Return full category
-        const { data: fullCat } = await supabase
+        let { data: fullCat } = await supabase
           .from('categories')
-          .select('*, subcategories(name, slug)')
+          .select('*, subcategories(id, name, slug, image)')
           .eq('id', data.id)
           .single();
+
+        if (!fullCat) {
+          const retry = await supabase
+            .from('categories')
+            .select('*, subcategories(id, name, slug)')
+            .eq('id', data.id)
+            .single();
+          fullCat = retry.data;
+        }
           
         return NextResponse.json(mapCategory(fullCat));
       }
@@ -1464,9 +1502,18 @@ async function handlePut(pathSegments: string[], req: NextRequest) {
             const subs = data.subcategories.map((s: any) => ({
               category_id: id,
               name: s.name,
-              slug: s.slug
+              slug: s.slug,
+              image: s.image ? convertGoogleDriveUrl(s.image) : (s.image || '')
             }));
-            await supabase.from('subcategories').insert(subs);
+            const { error: subErr } = await supabase.from('subcategories').insert(subs);
+            if (subErr) {
+              const subsNoImg = data.subcategories.map((s: any) => ({
+                category_id: id,
+                name: s.name,
+                slug: s.slug
+              }));
+              await supabase.from('subcategories').insert(subsNoImg);
+            }
           }
         }
         return NextResponse.json({ success: true });

@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { convertGoogleDriveUrl } from '@/lib/driveUrl';
 import { useCloudinaryUpload } from '@/hooks/useCloudinaryUpload';
 
-interface Cat { id: number; name: string; slug: string; image: string; productCount: number; subcategories: { id: number; name: string; slug: string; }[]; }
+interface Cat { id: number; name: string; slug: string; image: string; productCount: number; subcategories: { id: number; name: string; slug: string; image?: string; }[]; }
 
 export default function AdminCategoriesPage() {
   const { user } = useAuth();
@@ -17,6 +17,7 @@ export default function AdminCategoriesPage() {
   const [editing, setEditing] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [uploadingSubIndex, setUploadingSubIndex] = useState<number | null>(null);
   const { upload, loading: uploadingImage } = useCloudinaryUpload();
 
   useEffect(() => {
@@ -25,12 +26,19 @@ export default function AdminCategoriesPage() {
     api.admin.getCategories().then(setCats);
   }, [user]);
 
-  const empty = { name: '', slug: '', image: '', subcategories: [] as { name: string; slug: string; }[] };
+  const empty = { name: '', slug: '', image: '', subcategories: [] as { name: string; slug: string; image: string; }[] };
 
   const save = async () => {
     if (!editing) return;
     try {
-      const data = { ...editing, image: convertGoogleDriveUrl(editing.image || '') };
+      const data = { 
+        ...editing, 
+        image: convertGoogleDriveUrl(editing.image || ''),
+        subcategories: (editing.subcategories || []).map((s: any) => ({
+          ...s,
+          image: convertGoogleDriveUrl(s.image || '')
+        }))
+      };
       if (isCreating) { await api.admin.createCategory(data); toast.success('Created'); }
       else { await api.admin.updateCategory(editing.id, data); toast.success('Updated'); }
       setEditing(null); setIsCreating(false); api.admin.getCategories().then(setCats);
@@ -65,9 +73,16 @@ export default function AdminCategoriesPage() {
             </div>
             {expanded === c.id && c.subcategories.length > 0 && (
               <div className="border-t p-4 bg-gray-50">
-                <p className="text-xs text-gray-500 mb-2">Subcategories:</p>
+                <p className="text-xs text-gray-500 mb-2 font-medium">Subcategories:</p>
                 <div className="flex flex-wrap gap-2">
-                  {c.subcategories.map(s => <span key={s.id} className="px-3 py-1 bg-white border rounded-full text-sm">{s.name}</span>)}
+                  {c.subcategories.map(s => (
+                    <span key={s.id || s.slug} className="px-3 py-1.5 bg-white border rounded-full text-sm flex items-center gap-2 shadow-sm">
+                      {s.image ? (
+                        <img src={s.image} alt="" className="w-5 h-5 rounded-full object-cover border" />
+                      ) : null}
+                      {s.name}
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
@@ -111,7 +126,7 @@ export default function AdminCategoriesPage() {
                         }
                       }}
                       disabled={uploadingImage}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
                     />
                     <button 
                       type="button" 
@@ -119,7 +134,7 @@ export default function AdminCategoriesPage() {
                       className="px-4 py-2 border rounded-lg text-sm bg-gray-50 hover:bg-gray-100 transition flex items-center gap-1.5 h-full whitespace-nowrap"
                     >
                       <Upload size={14} />
-                      {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                      {uploadingImage && uploadingSubIndex === null ? 'Uploading...' : 'Upload Image'}
                     </button>
                   </div>
                 </div>
@@ -127,13 +142,95 @@ export default function AdminCategoriesPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Subcategories</label>
-                {(editing.subcategories || []).map((s: any, i: number) => (
-                  <div key={i} className="flex gap-2 mb-2">
-                    <input type="text" value={s.name} onChange={e => { const subs = [...editing.subcategories]; subs[i] = { ...subs[i], name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') }; setEditing({...editing, subcategories: subs}); }} className="flex-1 px-3 py-2 border rounded-lg text-sm" placeholder="Subcategory name" />
-                    <button onClick={() => { const subs = editing.subcategories.filter((_: any, j: number) => j !== i); setEditing({...editing, subcategories: subs}); }} className="p-2 text-red-500 hover:bg-red-50 rounded"><Trash2 size={14} /></button>
-                  </div>
-                ))}
-                <button onClick={() => setEditing({...editing, subcategories: [...(editing.subcategories || []), { name: '', slug: '' }]})} className="text-sm text-accent hover:underline flex items-center gap-1"><Plus size={14} /> Add Subcategory</button>
+                <div className="space-y-3 mb-3">
+                  {(editing.subcategories || []).map((s: any, i: number) => (
+                    <div key={i} className="p-3 border rounded-xl bg-gray-50 space-y-2">
+                      <div className="flex items-center gap-2">
+                        {s.image ? (
+                          <div className="w-10 h-10 rounded-lg overflow-hidden border bg-white shrink-0">
+                            <img src={s.image} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center text-[10px] text-gray-500 font-medium shrink-0">
+                            No img
+                          </div>
+                        )}
+                        <input 
+                          type="text" 
+                          value={s.name} 
+                          onChange={e => { 
+                            const subs = [...editing.subcategories]; 
+                            subs[i] = { ...subs[i], name: e.target.value, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') }; 
+                            setEditing({...editing, subcategories: subs}); 
+                          }} 
+                          className="flex-1 px-3 py-2 border rounded-lg text-sm bg-white" 
+                          placeholder="Subcategory name" 
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => { const subs = editing.subcategories.filter((_: any, j: number) => j !== i); setEditing({...editing, subcategories: subs}); }} 
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                          title="Delete subcategory"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      <div className="flex gap-2">
+                        <input 
+                          type="text" 
+                          value={s.image || ''} 
+                          onChange={e => { 
+                            const subs = [...editing.subcategories]; 
+                            subs[i] = { ...subs[i], image: e.target.value }; 
+                            setEditing({...editing, subcategories: subs}); 
+                          }} 
+                          className="flex-1 px-3 py-1.5 border rounded-lg text-xs bg-white" 
+                          placeholder="Subcategory image URL or upload file" 
+                        />
+                        <div className="relative shrink-0">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              try {
+                                setUploadingSubIndex(i);
+                                toast.loading('Uploading image to Cloudinary...', { id: `cloudinary-sub-${i}` });
+                                const url = await upload(file, 'comfort_products');
+                                const subs = [...editing.subcategories];
+                                subs[i] = { ...subs[i], image: url };
+                                setEditing({ ...editing, subcategories: subs });
+                                toast.success('Uploaded to Cloudinary!', { id: `cloudinary-sub-${i}` });
+                              } catch (err: any) {
+                                toast.error(err.message || 'Upload failed', { id: `cloudinary-sub-${i}` });
+                              } finally {
+                                setUploadingSubIndex(null);
+                              }
+                            }}
+                            disabled={uploadingImage}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
+                          />
+                          <button 
+                            type="button" 
+                            disabled={uploadingImage}
+                            className="px-3 py-1.5 border rounded-lg text-xs bg-white hover:bg-gray-100 transition flex items-center gap-1.5 h-full whitespace-nowrap font-medium shadow-sm"
+                          >
+                            <Upload size={13} />
+                            {uploadingImage && uploadingSubIndex === i ? 'Uploading...' : 'Upload Image'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button 
+                  type="button"
+                  onClick={() => setEditing({...editing, subcategories: [...(editing.subcategories || []), { name: '', slug: '', image: '' }]})} 
+                  className="text-sm text-accent hover:underline flex items-center gap-1 font-medium"
+                >
+                  <Plus size={14} /> Add Subcategory
+                </button>
               </div>
               <button onClick={save} className="w-full py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-hover transition flex items-center justify-center gap-2"><Save size={16} /> {isCreating ? 'Create' : 'Save'}</button>
             </div>
