@@ -243,19 +243,39 @@ export default function OrdersPage() {
     );
   };
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlOrderNumber = urlParams.get('orderNumber') || urlParams.get('orderId') || urlParams.get('id');
+      const urlEmail = urlParams.get('email') || '';
+      if (urlOrderNumber) {
+        setLoading(true);
+        api.trackOrder(urlOrderNumber, urlEmail)
+          .then(order => {
+            setTrackedOrder(order);
+            toast.success(`Order #${urlOrderNumber} Loaded!`);
+          })
+          .catch(err => {
+            toast.error(err.message || 'Order not found');
+          })
+          .finally(() => setLoading(false));
+      }
+    }
+  }, []);
+
   const handleTrackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
     const orderNumber = (form.elements.namedItem('trackingNumber') as HTMLInputElement).value.trim();
     const email = (form.elements.namedItem('email') as HTMLInputElement).value.trim();
     
-    if (!orderNumber || !email) {
-      toast.error('Please enter both Order Number and Email');
+    if (!orderNumber) {
+      toast.error('Please enter your Order ID');
       return;
     }
     
     try {
-      const order = await api.trackOrder(orderNumber, email);
+      const order = await api.trackOrder(orderNumber, email || undefined);
       setTrackedOrder(order);
       toast.success(`Order Found!`);
     } catch (err: any) { 
@@ -264,21 +284,21 @@ export default function OrdersPage() {
     }
   };
 
-  if (!user) {
+  if (!user && !trackedOrder) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20">
         <div className="text-center mb-8">
           <Package size={48} className="mx-auto text-gray-300 mb-4" />
           <h1 className="font-display text-3xl font-bold">Track Your Order</h1>
           <p className="text-gray-500 mt-2">
-            Enter your order number and email below to check status. Or <Link href="/auth?redirect=orders" className="text-accent hover:underline font-semibold">Sign In</Link> to view order history.
+            Enter your Order ID below to track your delivery. Or <Link href="/auth?redirect=orders" className="text-accent hover:underline font-semibold">Sign In</Link> to view order history.
           </p>
         </div>
 
         <div className="glass-card p-6 mb-8">
           <form onSubmit={handleTrackSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input required name="trackingNumber" placeholder="Order Number (e.g., CS-XXXXXXXX)" className="input-modern" />
-            <input required type="email" name="email" placeholder="Email Address used at checkout" className="input-modern" />
+            <input required name="trackingNumber" placeholder="Order ID (e.g. CS-123456 or 123456)" className="input-modern" />
+            <input type="email" name="email" placeholder="Email Address (optional)" className="input-modern" />
             <button type="submit" className="btn-primary py-2 px-6">Track Order</button>
           </form>
         </div>
@@ -306,8 +326,8 @@ export default function OrdersPage() {
         <div className="glass-card p-6 mb-8">
           <h2 className="font-semibold mb-4">Track an Order</h2>
           <form onSubmit={handleTrackSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <input required name="trackingNumber" placeholder="Order Number (e.g., CS-XXXXXXXX)" className="input-modern" />
-            <input required type="email" name="email" placeholder="Email Address used at checkout" className="input-modern" />
+            <input required name="trackingNumber" placeholder="Order ID (e.g. CS-123456 or 123456)" className="input-modern" />
+            <input type="email" name="email" placeholder="Email Address (optional)" className="input-modern" />
             <button type="submit" className="btn-primary py-2 px-6">Track Order</button>
           </form>
         </div>

@@ -76,7 +76,7 @@ export const api = {
 
   getOrders: () => fetcher<any[]>('/api/orders'),
   createOrder: (items: any[], shipping: any) => fetcher<any>('/api/orders', { method: 'POST', body: JSON.stringify({ items, shipping }) }),
-  trackOrder: (orderNumber: string, email: string) => fetcher<any>(`/api/orders/track/${orderNumber}?email=${encodeURIComponent(email)}`),
+  trackOrder: (orderNumber: string, email?: string) => fetcher<any>(`/api/orders/track/${encodeURIComponent(orderNumber)}${email ? `?email=${encodeURIComponent(email)}` : ''}`),
   uploadPaymentScreenshot: async (orderId: number, file: File) => {
     const formData = new FormData();
     formData.append('screenshot', file);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabase } from '@/lib/supabase';
 import { mockCatalog } from '@/data/mockCatalog';
+import { sendOrderConfirmationEmail } from '@/lib/email';
 
 // Lazy proxy for supabase client to prevent build-time crashes when env vars are missing
 const supabase = new Proxy({}, {
@@ -628,25 +629,57 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
   if (pathSegments[0] === 'orders') {
     // GET /api/orders/track/:orderNumber
     if (pathSegments[1] === 'track' && pathSegments[2]) {
-      const orderNumber = pathSegments[2];
+      const rawInput = decodeURIComponent(pathSegments[2]).trim().replace(/^#/, '');
       const email = searchParams.get('email')?.trim().toLowerCase();
       
-      if (!email) {
-        return NextResponse.json({ error: 'Email parameter is required to track this order' }, { status: 400 });
+      if (!rawInput) {
+        return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
       }
 
-      const { data, error } = await supabase
+      const searchCandidates = [rawInput];
+      if (!rawInput.toUpperCase().startsWith('CS-')) {
+        searchCandidates.push(`CS-${rawInput}`);
+      }
+
+      // 1. Try order_number exact match
+      let { data, error } = await supabase
         .from('orders')
         .select('*, order_items(*, products(*))')
-        .eq('order_number', orderNumber)
+        .in('order_number', searchCandidates)
         .maybeSingle();
         
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      if (!data) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
 
-      const orderEmail = (data.shipping_email || '').trim().toLowerCase();
-      if (orderEmail !== email) {
-        return NextResponse.json({ error: 'Order found, but email address does not match' }, { status: 403 });
+      // 2. Try numeric ID match if input is number
+      if (!data && /^\d+$/.test(rawInput)) {
+        const { data: idMatch } = await supabase
+          .from('orders')
+          .select('*, order_items(*, products(*))')
+          .eq('id', Number(rawInput))
+          .maybeSingle();
+        if (idMatch) data = idMatch;
+      }
+
+      // 3. Fallback partial order_number search
+      if (!data) {
+        const { data: ilikeMatches } = await supabase
+          .from('orders')
+          .select('*, order_items(*, products(*))')
+          .ilike('order_number', `%${rawInput}%`)
+          .limit(1);
+        if (ilikeMatches && ilikeMatches.length > 0) {
+          data = ilikeMatches[0];
+        }
+      }
+
+      if (!data) return NextResponse.json({ error: 'Order not found. Please check your Order ID and try again.' }, { status: 404 });
+
+      // Check email matching ONLY if caller passed an email parameter
+      if (email) {
+        const orderEmail = (data.shipping_email || '').trim().toLowerCase();
+        if (orderEmail && orderEmail !== email) {
+          return NextResponse.json({ error: 'Order found, but the email address does not match this order.' }, { status: 403 });
+        }
       }
 
       return NextResponse.json(mapOrder(data));
@@ -979,6 +1012,38 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           
         if (updateError) throw updateError;
 
+        // Fetch full order with items & product details for email dispatch
+        const { data: fullOrder } = await supabase
+          .from('orders')
+          .select('*, order_items(*, products(*))')
+          .eq('id', orderId)
+          .single();
+
+        if (fullOrder) {
+          sendOrderConfirmationEmail({
+            orderNumber: fullOrder.order_number,
+            shippingName: fullOrder.shipping_name,
+            shippingEmail: fullOrder.shipping_email,
+            shippingPhone: fullOrder.shipping_phone || '',
+            shippingCity: fullOrder.shipping_city || '',
+            shippingPostalCode: fullOrder.shipping_zip || '',
+            paymentMethod: 'Bank Pay',
+            status: 'processing',
+            total: Number(fullOrder.total),
+            shipping: Number(fullOrder.shipping || 0),
+            items: (fullOrder.order_items || []).map((item: any) => ({
+              name: item.products?.name || 'Product',
+              quantity: Number(item.quantity || 1),
+              price: Number(item.price || 0),
+              selectedSize: item.selected_size || '',
+              selectedColor: item.selected_color || '',
+              selectedStorage: item.selected_storage || '',
+              selectedMattress: item.selected_mattress || '',
+              image: item.products?.image || ''
+            }))
+          }).catch(err => console.error('[Email Dispatch Error]:', err));
+        }
+
         return NextResponse.json({ screenshotUrl: publicUrl, success: true });
       } catch (e: any) {
         console.error('File upload failed:', e);
@@ -1107,6 +1172,32 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
         .single();
         
       if (finalErr) throw finalErr;
+
+      // Dispatch order confirmation email immediately for Cash on Delivery orders
+      if (paymentMethod === 'Cash on Delivery' && finalOrder) {
+        sendOrderConfirmationEmail({
+          orderNumber: finalOrder.order_number,
+          shippingName: finalOrder.shipping_name,
+          shippingEmail: finalOrder.shipping_email,
+          shippingPhone: finalOrder.shipping_phone || '',
+          shippingCity: finalOrder.shipping_city || '',
+          shippingPostalCode: finalOrder.shipping_zip || '',
+          paymentMethod: 'Cash on Delivery',
+          status: 'processing',
+          total: Number(finalOrder.total),
+          shipping: Number(finalOrder.shipping || 0),
+          items: (finalOrder.order_items || []).map((item: any) => ({
+            name: item.products?.name || 'Product',
+            quantity: Number(item.quantity || 1),
+            price: Number(item.price || 0),
+            selectedSize: item.selected_size || '',
+            selectedColor: item.selected_color || '',
+            selectedStorage: item.selected_storage || '',
+            selectedMattress: item.selected_mattress || '',
+            image: item.products?.image || ''
+          }))
+        }).catch(err => console.error('[Email Dispatch Error]:', err));
+      }
 
       return NextResponse.json(mapOrder(finalOrder));
     } catch (e: any) {
@@ -1379,6 +1470,40 @@ async function handlePut(pathSegments: string[], req: NextRequest) {
         const { status } = await req.json();
         const { error } = await supabase.from('orders').update({ status }).eq('id', id);
         if (error) throw error;
+
+        if (status === 'processing' || status === 'completed') {
+          const { data: orderDetails } = await supabase
+            .from('orders')
+            .select('*, order_items(*, products(*))')
+            .eq('id', id)
+            .single();
+
+          if (orderDetails) {
+            sendOrderConfirmationEmail({
+              orderNumber: orderDetails.order_number,
+              shippingName: orderDetails.shipping_name,
+              shippingEmail: orderDetails.shipping_email,
+              shippingPhone: orderDetails.shipping_phone || '',
+              shippingCity: orderDetails.shipping_city || '',
+              shippingPostalCode: orderDetails.shipping_zip || '',
+              paymentMethod: orderDetails.payment_screenshot ? 'Bank Pay' : 'Cash on Delivery',
+              status: orderDetails.status,
+              total: Number(orderDetails.total),
+              shipping: Number(orderDetails.shipping || 0),
+              items: (orderDetails.order_items || []).map((item: any) => ({
+                name: item.products?.name || 'Product',
+                quantity: Number(item.quantity || 1),
+                price: Number(item.price || 0),
+                selectedSize: item.selected_size || '',
+                selectedColor: item.selected_color || '',
+                selectedStorage: item.selected_storage || '',
+                selectedMattress: item.selected_mattress || '',
+                image: item.products?.image || ''
+              }))
+            }).catch(err => console.error('[Email Dispatch Error]:', err));
+          }
+        }
+
         return NextResponse.json({ success: true });
       }
 
