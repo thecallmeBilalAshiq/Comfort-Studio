@@ -124,7 +124,7 @@ function mapCategory(c: any) {
     slug: c.slug,
     image: c.image || '',
     createdAt: c.created_at,
-    subcategories: c.subcategories?.map((s: any) => ({ id: s.id, name: s.name, slug: s.slug })) || []
+    subcategories: c.subcategories?.map((s: any) => ({ id: s.id, name: s.name, slug: s.slug, image: s.image || '' })) || []
   };
 }
 
@@ -525,8 +525,8 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
           slug: cat.slug,
           image: cat.image,
           createdAt: new Date().toISOString(),
-          subcategories: [],
-          productCount: cat.products.length
+          subcategories: cat.subcategories || [],
+          productCount: cat.products ? cat.products.length : 0
         };
       });
     }

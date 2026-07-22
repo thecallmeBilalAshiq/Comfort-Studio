@@ -125,13 +125,13 @@ export default function Header() {
                       <Link href="/shop" className="block px-4 py-2.5 text-sm font-medium text-brand hover:bg-accent/10 hover:text-accent rounded-xl transition-all">All Products</Link>
                       {categories.map(cat => (
                         <div key={cat.id}>
-                          <Link href={`/shop?category=${cat.slug}`} className="block px-4 py-2.5 text-sm text-brand hover:bg-accent/10 hover:text-accent rounded-xl transition-all font-bold">
+                          <Link href={`/category/${cat.slug}`} className="block px-4 py-2.5 text-sm text-brand hover:bg-accent/10 hover:text-accent rounded-xl transition-all font-bold">
                             {cat.name}
                           </Link>
-                          {cat.subcategories?.length > 0 && (
+                          {Boolean(cat.subcategories && cat.subcategories.length > 0) && (
                             <div className="ml-4 mb-1">
-                              {cat.subcategories.map(sub => (
-                                <Link key={sub.id} href={`/shop?category=${cat.slug}&subcategory=${sub.slug}`} className="block px-4 py-1.5 text-xs text-gray-600 hover:text-accent transition-all font-medium">
+                              {cat.subcategories!.map(sub => (
+                                <Link key={sub.id} href={`/category/${cat.slug}?sub=${sub.slug}`} className="block px-4 py-1.5 text-xs text-gray-600 hover:text-accent transition-all font-medium">
                                   {sub.name}
                                 </Link>
                               ))}
@@ -214,17 +214,17 @@ export default function Header() {
                 {categories.map(cat => (
                   <div key={cat.id}>
                     <div className="flex items-center">
-                      <Link href={`/shop?category=${cat.slug}`} onClick={closeMobileMenu} className="flex-1 py-2.5 px-3 text-sm text-brand rounded-xl hover:bg-accent/5 hover:text-accent font-bold transition">{cat.name}</Link>
-                      {cat.subcategories?.length > 0 && (
+                      <Link href={`/category/${cat.slug}`} onClick={closeMobileMenu} className="flex-1 py-2.5 px-3 text-sm text-brand rounded-xl hover:bg-accent/5 hover:text-accent font-bold transition">{cat.name}</Link>
+                      {Boolean(cat.subcategories && cat.subcategories.length > 0) && (
                         <button onClick={() => toggleMobileCat(cat.id)} className="p-2 mr-1 hover:bg-gray-100 rounded-lg transition">
                           <ChevronDown size={16} className={`transition-transform duration-200 ${mobileCatExpanded === cat.id ? 'rotate-180' : ''}`} />
                         </button>
                       )}
                     </div>
-                    {mobileCatExpanded === cat.id && cat.subcategories?.length > 0 && (
+                    {mobileCatExpanded === cat.id && Boolean(cat.subcategories && cat.subcategories.length > 0) && (
                       <div className="ml-4 mb-1">
-                        {cat.subcategories.map(sub => (
-                          <Link key={sub.id} href={`/shop?category=${cat.slug}&subcategory=${sub.slug}`} onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-600 hover:text-accent hover:bg-accent/5 rounded-lg font-medium transition">{sub.name}</Link>
+                        {cat.subcategories!.map(sub => (
+                          <Link key={sub.id} href={`/category/${cat.slug}?sub=${sub.slug}`} onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-600 hover:text-accent hover:bg-accent/5 rounded-lg font-medium transition">{sub.name}</Link>
                         ))}
                       </div>
                     )}

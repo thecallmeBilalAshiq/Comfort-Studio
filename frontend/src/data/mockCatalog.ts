@@ -103,6 +103,12 @@ export const mockCatalog: Category[] = [
     name: 'Sofas',
     slug: 'sofas',
     image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80',
+    subcategories: [
+      { id: 11, name: "3-Seater Velvet Sofas", slug: "3-seater-sofas", image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&auto=format&fit=crop&q=80", categoryId: 1 },
+      { id: 12, name: "Corner & Sectional Sofas", slug: "corner-sofas", image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&auto=format&fit=crop&q=80", categoryId: 1 },
+      { id: 13, name: "Recliner & Motion Sofas", slug: "recliner-sofas", image: "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=600&auto=format&fit=crop&q=80", categoryId: 1 },
+      { id: 14, name: "Sofa Beds", slug: "sofa-bed", image: "https://images.unsplash.com/photo-1544030288-e6e6108867f8?w=600&auto=format&fit=crop&q=80", categoryId: 1 }
+    ],
     products: [
       {
         id: 101,
@@ -329,8 +335,9 @@ export const mockCatalog: Category[] = [
     slug: 'beds',
     image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
     subcategories: [
-      { id: 51, name: "Ottoman Beds", slug: "ottoman-beds", categoryId: 5 },
-      { id: 52, name: "Wooden Beds", slug: "wooden-beds", categoryId: 5 }
+      { id: 51, name: "Ottoman Storage Beds", slug: "ottoman-beds", image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80", categoryId: 5 },
+      { id: 52, name: "Wooden & Oak Beds", slug: "wooden-beds", image: "https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=600&auto=format&fit=crop&q=80", categoryId: 5 },
+      { id: 53, name: "Velvet Sleigh Beds", slug: "sleigh-beds", image: "https://images.unsplash.com/photo-1540518614846-7ede433c51f3?w=600&auto=format&fit=crop&q=80", categoryId: 5 }
     ],
     products: [
       {
@@ -398,6 +405,11 @@ export const mockCatalog: Category[] = [
     name: 'Mattresses',
     slug: 'mattresses',
     image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&auto=format&fit=crop&q=80',
+    subcategories: [
+      { id: 61, name: "Pocket Sprung Mattresses", slug: "pocket-sprung", image: "https://images.unsplash.com/photo-1584100936595-c0654b55a2e2?w=600&auto=format&fit=crop&q=80", categoryId: 6 },
+      { id: 62, name: "Orthopaedic Memory Foam", slug: "orthopaedic", image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&auto=format&fit=crop&q=80", categoryId: 6 },
+      { id: 63, name: "Hybrid Gel Mattresses", slug: "hybrid-gel", image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80", categoryId: 6 }
+    ],
     products: [
       {
         id: 601,
@@ -412,6 +424,11 @@ export const mockCatalog: Category[] = [
         rating: 4.7,
         reviewCount: 88,
         categoryId: 6,
+        categoryName: 'Mattresses',
+        categorySlug: 'mattresses',
+        subcategoryId: 61,
+        subcategoryName: 'Pocket Sprung Mattresses',
+        subcategorySlug: 'pocket-sprung',
         sizes: MATTRESS_SIZES,
         galleryImages: [
           'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&auto=format&fit=crop&q=80',
@@ -433,6 +450,11 @@ export const mockCatalog: Category[] = [
         rating: 4.9,
         reviewCount: 112,
         categoryId: 6,
+        categoryName: 'Mattresses',
+        categorySlug: 'mattresses',
+        subcategoryId: 62,
+        subcategoryName: 'Orthopaedic Memory Foam',
+        subcategorySlug: 'orthopaedic',
         sizes: MATTRESS_SIZES,
         galleryImages: [
           'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&auto=format&fit=crop&q=80',
@@ -448,6 +470,10 @@ export const mockCatalog: Category[] = [
     name: 'Chairs',
     slug: 'chairs',
     image: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
+    subcategories: [
+      { id: 71, name: "Velvet Accent Chairs", slug: "accent-chairs", image: "https://images.unsplash.com/photo-1580481072645-022f9a6d83d0?w=600&auto=format&fit=crop&q=80", categoryId: 7 },
+      { id: 72, name: "Classic Wingback Armchairs", slug: "wingback-chairs", image: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80", categoryId: 7 }
+    ],
     products: [
       {
         id: 701,
@@ -462,6 +488,11 @@ export const mockCatalog: Category[] = [
         rating: 4.5,
         reviewCount: 30,
         categoryId: 7,
+        categoryName: 'Chairs',
+        categorySlug: 'chairs',
+        subcategoryId: 71,
+        subcategoryName: 'Velvet Accent Chairs',
+        subcategorySlug: 'accent-chairs',
         galleryImages: [
           'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
           'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80',
@@ -482,6 +513,11 @@ export const mockCatalog: Category[] = [
         rating: 4.8,
         reviewCount: 17,
         categoryId: 7,
+        categoryName: 'Chairs',
+        categorySlug: 'chairs',
+        subcategoryId: 72,
+        subcategoryName: 'Classic Wingback Armchairs',
+        subcategorySlug: 'wingback-chairs',
         galleryImages: [
           'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=600&auto=format&fit=crop&q=80',
           'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=600&auto=format&fit=crop&q=80',
@@ -496,6 +532,10 @@ export const mockCatalog: Category[] = [
     name: 'Dining',
     slug: 'dining',
     image: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&auto=format&fit=crop&q=80',
+    subcategories: [
+      { id: 81, name: "Solid Oak Dining Sets", slug: "oak-dining", image: "https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&auto=format&fit=crop&q=80", categoryId: 8 },
+      { id: 82, name: "Marble Dining Tables", slug: "marble-dining", image: "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?w=600&auto=format&fit=crop&q=80", categoryId: 8 }
+    ],
     products: [
       {
         id: 801,

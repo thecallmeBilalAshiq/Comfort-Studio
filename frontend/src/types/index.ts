@@ -12,15 +12,16 @@ export interface Category {
   name: string;
   slug: string;
   image: string;
-  subcategories: Subcategory[];
+  subcategories?: Subcategory[];
   productCount?: number;
 }
 
 export interface Subcategory {
-  id: number;
-  categoryId: number;
+  id?: number;
+  categoryId?: number;
   name: string;
   slug: string;
+  image?: string;
 }
 
 export interface Product {

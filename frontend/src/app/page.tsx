@@ -108,7 +108,7 @@ export default function HomePage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {categories.map((cat, i) => (
               <ScaleIn key={cat.id} delay={i * 100}>
-                <Link href={`/shop?category=${cat.slug}`} className="group glass-card overflow-hidden hover:shadow-2xl transition-all duration-500">
+                <Link href={`/category/${cat.slug}`} className="group glass-card overflow-hidden hover:shadow-2xl transition-all duration-500">
                   <div className="aspect-[4/3] overflow-hidden">
                     <img src={cat.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400'} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   </div>
