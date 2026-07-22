@@ -69,8 +69,8 @@ export const api = {
   getCategories: () => fetcher<any[]>('/api/categories'),
 
   getCart: () => fetcher<any[]>('/api/cart'),
-  addToCart: (productId: number, quantity = 1, size?: string, color?: string, storage?: string, mattress?: string, priceOverride?: number) =>
-    fetcher<any[]>('/api/cart', { method: 'POST', body: JSON.stringify({ productId, quantity, size, color, storage, mattress, price: priceOverride }) }),
+  addToCart: (productId: number, quantity = 1, size?: string, color?: string, storage?: string, mattress?: string, priceOverride?: number, fabric?: string) =>
+    fetcher<any[]>('/api/cart', { method: 'POST', body: JSON.stringify({ productId, quantity, size, color, fabric, storage, mattress, price: priceOverride }) }),
   updateCart: (cartItemId: number, quantity: number) => fetcher<any[]>(`/api/cart/${cartItemId}`, { method: 'PUT', body: JSON.stringify({ quantity }) }),
   removeFromCart: (cartItemId: number) => fetcher<any[]>(`/api/cart/${cartItemId}`, { method: 'DELETE' }),
 

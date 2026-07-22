@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS products (
   featured BOOLEAN DEFAULT FALSE,
   gallery_images JSONB DEFAULT '[]',
   colors JSONB DEFAULT '[]',
+  fabrics JSONB DEFAULT '[]',
   sizes JSONB DEFAULT '[]',
   storage_options JSONB DEFAULT '[]',
   mattress_options JSONB DEFAULT '[]',
@@ -125,6 +126,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   price DECIMAL(10, 2) NOT NULL,
   selected_size VARCHAR(100),
   selected_color VARCHAR(100),
+  selected_fabric VARCHAR(100),
   selected_storage VARCHAR(100),
   selected_mattress VARCHAR(100)
 );
@@ -137,10 +139,11 @@ CREATE TABLE IF NOT EXISTS cart (
   quantity INTEGER NOT NULL DEFAULT 1,
   selected_size VARCHAR(100),
   selected_color VARCHAR(100),
+  selected_fabric VARCHAR(100),
   selected_storage VARCHAR(100),
   selected_mattress VARCHAR(100),
   price DECIMAL(10, 2),
-  UNIQUE(user_id, product_id, selected_size, selected_color, selected_storage, selected_mattress)
+  UNIQUE(user_id, product_id, selected_size, selected_color, selected_fabric, selected_storage, selected_mattress)
 );
 
 -- 12. Contact Messages

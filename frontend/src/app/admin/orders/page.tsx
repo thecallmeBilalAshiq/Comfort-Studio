@@ -148,6 +148,7 @@ export default function AdminOrdersPage() {
       const itemsFullBreakdown = itemsList.map((item: any) => {
         const specs = [];
         if (item.selectedSize) specs.push(`Size: ${item.selectedSize}`);
+        if (item.selectedFabric) specs.push(`Fabric: ${item.selectedFabric}`);
         if (item.selectedColor) specs.push(`Colour: ${item.selectedColor}`);
         if (item.selectedStorage) specs.push(`Storage: ${item.selectedStorage}`);
         if (item.selectedMattress) specs.push(`Mattress: ${item.selectedMattress}`);
@@ -278,10 +279,11 @@ export default function AdminOrdersPage() {
                         <div className="w-10 h-10 bg-gray-200 rounded-lg overflow-hidden shrink-0"><img src={item.image || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=50'} alt="" className="w-full h-full object-cover" /></div>
                         <div className="flex-1 min-w-0">
                           <span className="block font-medium truncate">{item.name}</span>
-                          {(item.selectedSize || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
+                          {(item.selectedSize || item.selectedFabric || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
                             <span className="block text-[10px] text-gray-500 truncate">
                               {[
                                 item.selectedSize && `Size: ${item.selectedSize}`,
+                                item.selectedFabric && `Fabric: ${item.selectedFabric}`,
                                 item.selectedColor && `Color: ${item.selectedColor}`,
                                 item.selectedStorage && `Storage: ${item.selectedStorage}`,
                                 item.selectedMattress && `Mattress: ${item.selectedMattress}`
@@ -297,6 +299,7 @@ export default function AdminOrdersPage() {
                   <div>
                     <p className="text-xs text-gray-500 mb-2 font-medium">Shipping</p>
                     <p className="text-sm font-medium">{o.shippingName}</p>
+                    {o.shippingAddress && <p className="text-sm text-gray-600">{o.shippingAddress}</p>}
                     <p className="text-sm text-gray-600">{o.shippingCity}, {o.shippingPostalCode || o.shippingZip}</p>
                     <p className="text-sm text-gray-600">{o.shippingEmail} · {o.shippingPhone}</p>
                   </div>

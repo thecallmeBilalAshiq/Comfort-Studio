@@ -5,6 +5,7 @@ export interface OrderItemEmailData {
   quantity: number;
   price: number;
   selectedSize?: string;
+  selectedFabric?: string;
   selectedColor?: string;
   selectedStorage?: string;
   selectedMattress?: string;
@@ -16,6 +17,7 @@ export interface OrderEmailData {
   shippingName: string;
   shippingEmail: string;
   shippingPhone: string;
+  shippingAddress?: string;
   shippingCity: string;
   shippingPostalCode: string;
   paymentMethod: string;
@@ -38,6 +40,7 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData) {
   const itemsHtml = order.items.map(item => {
     const variations = [];
     if (item.selectedSize) variations.push(`<li><strong>Size:</strong> ${item.selectedSize}</li>`);
+    if (item.selectedFabric) variations.push(`<li><strong>Fabric:</strong> ${item.selectedFabric}</li>`);
     if (item.selectedColor) variations.push(`<li><strong>Colour:</strong> ${item.selectedColor}</li>`);
     if (item.selectedStorage) variations.push(`<li><strong>Storage:</strong> ${item.selectedStorage}</li>`);
     if (item.selectedMattress) variations.push(`<li><strong>Mattress:</strong> ${item.selectedMattress}</li>`);
@@ -111,6 +114,12 @@ export async function sendOrderConfirmationEmail(order: OrderEmailData) {
               <td style="padding: 6px 0; color: #777777;">Contact Phone:</td>
               <td style="padding: 6px 0; font-weight: 600; color: #333333;">${order.shippingPhone || 'Not provided'}</td>
             </tr>
+            ${order.shippingAddress ? `
+            <tr>
+              <td style="padding: 6px 0; color: #777777;">Address:</td>
+              <td style="padding: 6px 0; font-weight: 600; color: #333333;">${order.shippingAddress}</td>
+            </tr>
+            ` : ''}
             <tr>
               <td style="padding: 6px 0; color: #777777;">City:</td>
               <td style="padding: 6px 0; font-weight: 600; color: #333333;">${order.shippingCity || 'N/A'}</td>

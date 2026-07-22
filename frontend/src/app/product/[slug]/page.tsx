@@ -27,7 +27,8 @@ export default function ProductPage() {
   // Configuration States
   const [activeImage, setActiveImage] = useState<string>('');
   const [selectedSize, setSelectedSize] = useState<{ name: string; priceModifier: number } | null>(null);
-  const [selectedColor, setSelectedColor] = useState<{ name: string; hex: string } | null>(null);
+  const [selectedFabric, setSelectedFabric] = useState<{ name: string; priceModifier?: number } | null>(null);
+  const [selectedColor, setSelectedColor] = useState<string>('');
   const [selectedStorage, setSelectedStorage] = useState<{ name: string; priceModifier: number } | null>(null);
   const [selectedMattress, setSelectedMattress] = useState<{ name: string; priceModifier: number } | null>(null);
 
@@ -79,11 +80,12 @@ export default function ProductPage() {
         } else {
           setSelectedSize(null);
         }
-        if (prod.colors && prod.colors.length > 0) {
-          setSelectedColor(prod.colors[0]);
+        if (prod.fabrics && prod.fabrics.length > 0) {
+          setSelectedFabric(prod.fabrics[0]);
         } else {
-          setSelectedColor(null);
+          setSelectedFabric({ name: 'Plush Velvet', priceModifier: 0 });
         }
+        setSelectedColor('');
         if (prod.storageOptions && prod.storageOptions.length > 0) {
           setSelectedStorage(prod.storageOptions[0]);
         } else {
@@ -102,6 +104,7 @@ export default function ProductPage() {
     if (!product) return 0;
     let base = Number(product.price);
     if (selectedSize) base += Number(selectedSize.priceModifier || 0);
+    if (selectedFabric && selectedFabric.priceModifier) base += Number(selectedFabric.priceModifier || 0);
     if (selectedStorage) base += Number(selectedStorage.priceModifier || 0);
     if (selectedMattress) base += Number(selectedMattress.priceModifier || 0);
     return Math.max(0, base);
@@ -111,6 +114,7 @@ export default function ProductPage() {
     if (!product || !product.originalPrice) return null;
     let base = Number(product.originalPrice);
     if (selectedSize) base += Number(selectedSize.priceModifier || 0);
+    if (selectedFabric && selectedFabric.priceModifier) base += Number(selectedFabric.priceModifier || 0);
     if (selectedStorage) base += Number(selectedStorage.priceModifier || 0);
     if (selectedMattress) base += Number(selectedMattress.priceModifier || 0);
     return Math.max(0, base);
@@ -125,10 +129,11 @@ export default function ProductPage() {
       product.id,
       qty,
       selectedSize?.name,
-      selectedColor?.name,
+      selectedColor.trim(),
       selectedStorage?.name,
       selectedMattress?.name,
-      finalPrice
+      finalPrice,
+      selectedFabric?.name
     );
     toast.success(`Added ${qty} item${qty > 1 ? 's' : ''} to cart!`);
   };
@@ -139,17 +144,19 @@ export default function ProductPage() {
       product.id,
       qty,
       selectedSize?.name,
-      selectedColor?.name,
+      selectedColor.trim(),
       selectedStorage?.name,
       selectedMattress?.name,
-      finalPrice
+      finalPrice,
+      selectedFabric?.name
     );
     router.push('/checkout');
   };
 
   const handleClear = () => {
     setSelectedSize(null);
-    setSelectedColor(null);
+    setSelectedFabric(null);
+    setSelectedColor('');
     setSelectedStorage(null);
     setSelectedMattress(null);
   };
@@ -410,36 +417,54 @@ export default function ProductPage() {
                 </div>
               )}
 
-              {/* 3. Color swatches */}
-              {product.colors && product.colors.length > 0 && (
+              {/* 3. Fabric Options */}
+              {((product.fabrics && product.fabrics.length > 0) || true) && (
                 <div>
                   <span className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-2.5">
-                    Plush Colours: <span className="text-gray-500 font-normal pl-1">({selectedColor ? selectedColor.name : 'No selection'})</span>
+                    Select a Fabric: <span className="text-gray-500 font-normal lowercase pl-1">({selectedFabric ? selectedFabric.name : 'No selection'})</span>
                   </span>
-                  <div className="flex flex-wrap gap-2.5">
-                    {product.colors.map(color => {
-                      const isSelected = selectedColor?.name === color.name;
+                  <div className="flex flex-wrap gap-2">
+                    {(product.fabrics && product.fabrics.length > 0 ? product.fabrics : [
+                      { name: 'Plush Velvet', priceModifier: 0 },
+                      { name: 'Naples Velvet', priceModifier: 0 },
+                      { name: 'Crushed Velvet', priceModifier: 0 },
+                      { name: 'Chenille', priceModifier: 20 },
+                      { name: 'Teddy Boucle', priceModifier: 30 }
+                    ]).map(fab => {
+                      const isSelected = selectedFabric?.name === fab.name;
+                      const diff = fab.priceModifier || 0;
+                      const diffText = diff > 0 ? ` (+£${diff})` : diff < 0 ? ` (-£${Math.abs(diff)})` : '';
                       return (
                         <button
-                          key={color.name}
-                          onClick={() => setSelectedColor(color)}
-                          title={color.name}
-                          className={`w-9 h-9 rounded-full border-2 transition-all flex items-center justify-center shadow-xs ${
+                          key={fab.name}
+                          onClick={() => setSelectedFabric(fab)}
+                          className={`px-4 py-2.5 text-xs font-semibold border rounded transition-all ${
                             isSelected
-                              ? 'border-black ring-2 ring-black/20 scale-110'
-                              : 'border-gray-200 hover:scale-105'
+                              ? 'border-black bg-black text-white shadow-sm'
+                              : 'border-gray-250 text-gray-700 hover:border-gray-400 hover:bg-gray-50 bg-white'
                           }`}
-                          style={{ backgroundColor: color.hex }}
                         >
-                          {isSelected && (
-                            <span className="w-2.5 h-2.5 bg-white rounded-full mix-blend-difference" />
-                          )}
+                          {fab.name}{diffText}
                         </button>
                       );
                     })}
                   </div>
                 </div>
               )}
+
+              {/* 4. Custom Colour Input */}
+              <div>
+                <span className="text-xs font-bold text-gray-800 uppercase tracking-wider block mb-2">
+                  Colour Name: <span className="text-gray-500 font-normal lowercase pl-1">(Type any colour of your choice)</span>
+                </span>
+                <input
+                  type="text"
+                  value={selectedColor}
+                  onChange={e => setSelectedColor(e.target.value)}
+                  placeholder="e.g. Royal Blue, Charcoal, Blush Pink, Cream..."
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-xs font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-black bg-white shadow-xs"
+                />
+              </div>
 
               {/* 4. Mattress Options */}
               {product.mattressOptions && product.mattressOptions.length > 0 && (

@@ -19,6 +19,7 @@ export default function CheckoutPage() {
     lastName: user?.name?.split(' ').slice(1).join(' ') || '',
     email: user?.email || '',
     phone: '',
+    address: '',
     city: '',
     postalCode: '',
   });
@@ -58,6 +59,7 @@ export default function CheckoutPage() {
         quantity: i.quantity,
         selectedSize: i.selectedSize || '',
         selectedColor: i.selectedColor || '',
+        selectedFabric: i.selectedFabric || '',
         selectedStorage: i.selectedStorage || '',
         selectedMattress: i.selectedMattress || '',
         price: i.price
@@ -105,6 +107,10 @@ export default function CheckoutPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
                 <input required type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className="input-modern" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Complete Address *</label>
+                <input required type="text" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="e.g. Muslim town, house no. 9" className="input-modern" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
@@ -166,9 +172,10 @@ export default function CheckoutPage() {
                     <p className="font-medium line-clamp-1">{item.name || 'Product'}</p>
                     
                     {/* Variant selections */}
-                    {(item.selectedSize || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
+                    {(item.selectedSize || item.selectedFabric || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
                       <div className="flex flex-wrap gap-x-2 text-[11px] text-gray-500">
                         {item.selectedSize && <span>Size: <strong className="text-gray-700">{item.selectedSize}</strong></span>}
+                        {item.selectedFabric && <span>Fabric: <strong className="text-gray-700">{item.selectedFabric}</strong></span>}
                         {item.selectedColor && <span>Color: <strong className="text-gray-700">{item.selectedColor}</strong></span>}
                         {item.selectedStorage && <span>Storage: <strong className="text-gray-700">{item.selectedStorage}</strong></span>}
                         {item.selectedMattress && <span>Mattress: <strong className="text-gray-700">{item.selectedMattress}</strong></span>}

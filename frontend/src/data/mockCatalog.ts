@@ -18,6 +18,7 @@ export interface Product {
   subcategorySlug?: string;
   galleryImages?: string[];
   colors?: { name: string; hex: string }[];
+  fabrics?: { name: string; priceModifier?: number }[];
   sizes?: { name: string; priceModifier: number }[];
   storageOptions?: { name: string; priceModifier: number }[];
   mattressOptions?: { name: string; priceModifier: number }[];
@@ -47,6 +48,14 @@ export function formatPrice(price: number): string {
 }
 
 // Common options to share
+export const DEFAULT_FABRICS = [
+  { name: 'Plush Velvet', priceModifier: 0 },
+  { name: 'Naples Velvet', priceModifier: 0 },
+  { name: 'Crushed Velvet', priceModifier: 0 },
+  { name: 'Chenille', priceModifier: 20 },
+  { name: 'Teddy Boucle', priceModifier: 30 }
+];
+
 const SOFA_COLORS = [
   { name: 'Royal Blue', hex: '#0F4C81' },
   { name: 'Emerald Green', hex: '#097969' },

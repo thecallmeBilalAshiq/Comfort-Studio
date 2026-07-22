@@ -37,9 +37,10 @@ export default function CartPage() {
                 <Link href={`/product/${item.slug}`} className="font-medium hover:text-accent transition line-clamp-1">{item.name || 'Product'}</Link>
                 
                 {/* Variant Selections */}
-                {(item.selectedSize || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
+                {(item.selectedSize || item.selectedFabric || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
                   <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs text-gray-500">
                     {item.selectedSize && <span>Size: <strong className="text-gray-700">{item.selectedSize}</strong></span>}
+                    {item.selectedFabric && <span>Fabric: <strong className="text-gray-700">{item.selectedFabric}</strong></span>}
                     {item.selectedColor && <span>Color: <strong className="text-gray-700">{item.selectedColor}</strong></span>}
                     {item.selectedStorage && <span>Storage: <strong className="text-gray-700">{item.selectedStorage}</strong></span>}
                     {item.selectedMattress && <span>Mattress: <strong className="text-gray-700">{item.selectedMattress}</strong></span>}

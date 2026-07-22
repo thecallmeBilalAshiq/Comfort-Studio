@@ -46,6 +46,7 @@ export interface Product {
   related?: Product[];
   galleryImages?: string[];
   colors?: { name: string; hex: string }[];
+  fabrics?: { name: string; priceModifier?: number }[];
   sizes?: { name: string; priceModifier: number }[];
   storageOptions?: { name: string; priceModifier: number }[];
   mattressOptions?: { name: string; priceModifier: number }[];
@@ -102,6 +103,7 @@ export interface CartItem {
   stock?: number;
   selectedSize?: string;
   selectedColor?: string;
+  selectedFabric?: string;
   selectedStorage?: string;
   selectedMattress?: string;
 }
@@ -116,6 +118,7 @@ export interface Order {
   shippingName: string;
   shippingEmail: string;
   shippingPhone: string;
+  shippingAddress?: string;
   shippingCity: string;
   shippingPostalCode: string;
   createdAt: string;
@@ -134,6 +137,7 @@ export interface OrderItem {
   slug: string;
   selectedSize?: string;
   selectedColor?: string;
+  selectedFabric?: string;
   selectedStorage?: string;
   selectedMattress?: string;
 }

@@ -95,6 +95,30 @@ export default function HomePage() {
       </section>
 
       <ScrollBanner />
+   {/* Featured */}
+      {featured.length > 0 && (
+        <section className="py-16 md:py-24 bg-[#faf7f4]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <FadeIn>
+              <div className="flex items-center justify-between mb-12">
+                <div>
+                  <h2 className="font-display text-3xl md:text-4xl font-bold">Featured Products</h2>
+                  <p className="text-gray-500 mt-2 text-lg">Handpicked for you</p>
+                </div>
+                <Link href="/shop" className="btn-primary hidden sm:flex items-center gap-2">View All <ArrowRight size={16} /></Link>
+              </div>
+            </FadeIn>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featured.map((p, i) => (
+                <ScaleIn key={p.id} delay={i * 100}>
+                  <ProductCard product={p} />
+                </ScaleIn>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
 
       {/* Categories */}
       <section className="py-16 md:py-24 bg-gradient-to-b from-[#faf7f4] to-white">
@@ -123,30 +147,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured */}
-      {featured.length > 0 && (
-        <section className="py-16 md:py-24 bg-[#faf7f4]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <FadeIn>
-              <div className="flex items-center justify-between mb-12">
-                <div>
-                  <h2 className="font-display text-3xl md:text-4xl font-bold">Featured Products</h2>
-                  <p className="text-gray-500 mt-2 text-lg">Handpicked for you</p>
-                </div>
-                <Link href="/shop" className="btn-primary hidden sm:flex items-center gap-2">View All <ArrowRight size={16} /></Link>
-              </div>
-            </FadeIn>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featured.map((p, i) => (
-                <ScaleIn key={p.id} delay={i * 100}>
-                  <ProductCard product={p} />
-                </ScaleIn>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
+   
       {/* Best Sellers */}
       {bestSellers.length > 0 && (
         <section className="py-16 md:py-24 bg-brand-dark text-white">

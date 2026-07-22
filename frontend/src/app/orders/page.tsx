@@ -128,9 +128,10 @@ export default function OrdersPage() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
-                      {(item.selectedSize || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
+                      {(item.selectedSize || item.selectedFabric || item.selectedColor || item.selectedStorage || item.selectedMattress) && (
                         <div className="flex flex-wrap gap-x-2 text-[10px] text-gray-500">
                           {item.selectedSize && <span>Size: {item.selectedSize}</span>}
+                          {item.selectedFabric && <span>Fabric: {item.selectedFabric}</span>}
                           {item.selectedColor && <span>Color: {item.selectedColor}</span>}
                           {item.selectedStorage && <span>Storage: {item.selectedStorage}</span>}
                           {item.selectedMattress && <span>Mattress: {item.selectedMattress}</span>}
@@ -148,6 +149,7 @@ export default function OrdersPage() {
               <div className="bg-white rounded-xl p-4 text-sm">
                 <p className="font-medium mb-1 text-[#5d4037]">Shipping Info</p>
                 <p className="text-gray-600">{order.shippingName}</p>
+                {order.shippingAddress && <p className="text-gray-700 font-medium">{order.shippingAddress}</p>}
                 <p className="text-gray-500">{order.shippingCity}, {order.shippingPostalCode || order.shippingZip}</p>
                 <p className="text-gray-500 mt-1">{order.shippingPhone}</p>
               </div>

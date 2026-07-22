@@ -14,7 +14,8 @@ interface CartCtx {
     color?: string,
     storage?: string,
     mattress?: string,
-    priceOverride?: number
+    priceOverride?: number,
+    fabric?: string
   ) => Promise<void>;
   updateQty: (cartItemId: number, qty: number) => Promise<void>;
   remove: (cartItemId: number) => Promise<void>;
@@ -84,11 +85,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     color?: string,
     storage?: string,
     mattress?: string,
-    priceOverride?: number
+    priceOverride?: number,
+    fabric?: string
   ) => {
     if (user) {
       setLoading(true);
-      const updated = await api.addToCart(productId, qty, size, color, storage, mattress, priceOverride);
+      const updated = await api.addToCart(productId, qty, size, color, storage, mattress, priceOverride, fabric);
       setItems(updated);
       setLoading(false);
     } else {
@@ -100,6 +102,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         i.productId === productId &&
         (i.selectedSize || '') === (size || '') &&
         (i.selectedColor || '') === (color || '') &&
+        (i.selectedFabric || '') === (fabric || '') &&
         (i.selectedStorage || '') === (storage || '') &&
         (i.selectedMattress || '') === (mattress || '')
       );
@@ -121,6 +124,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           slug: '',
           selectedSize: size || '',
           selectedColor: color || '',
+          selectedFabric: fabric || '',
           selectedStorage: storage || '',
           selectedMattress: mattress || ''
         };

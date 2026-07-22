@@ -24,6 +24,7 @@ interface AdminProduct {
   categoryName: string;
   galleryImages?: string[];
   colors?: { name: string; hex: string }[];
+  fabrics?: { name: string; priceModifier?: number }[];
   sizes?: { name: string; priceModifier: number }[];
   storageOptions?: { name: string; priceModifier: number }[];
   mattressOptions?: { name: string; priceModifier: number }[];
@@ -56,6 +57,7 @@ export default function AdminProductsPage() {
     categoryName: '',
     galleryImages: [],
     colors: [],
+    fabrics: [],
     sizes: [],
     storageOptions: [],
     mattressOptions: []
@@ -422,20 +424,19 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
 
-                {/* 2. Colors */}
+                {/* 2. Fabrics */}
                 <div className="sm:col-span-2 border-t border-gray-100 pt-4">
-                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Plush Colors</label>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Fabrics</label>
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {(editing.colors || []).map((col, idx) => (
+                    {(editing.fabrics || []).map((fab, idx) => (
                       <div key={idx} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border rounded-full text-xs font-medium">
-                        <span className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0" style={{ backgroundColor: col.hex }} />
-                        <span>{col.name}</span>
+                        <span>{fab.name}{fab.priceModifier ? ` (+£${fab.priceModifier})` : ''}</span>
                         <button
                           type="button"
                           onClick={() => {
-                            const updated = [...(editing.colors || [])];
+                            const updated = [...(editing.fabrics || [])];
                             updated.splice(idx, 1);
-                            setEditing({ ...editing, colors: updated });
+                            setEditing({ ...editing, fabrics: updated });
                           }}
                           className="text-gray-400 hover:text-red-500 transition-colors"
                         >
@@ -443,44 +444,52 @@ export default function AdminProductsPage() {
                         </button>
                       </div>
                     ))}
-                    {(editing.colors || []).length === 0 && (
-                      <p className="text-xs text-gray-400">No color options defined.</p>
+                    {(editing.fabrics || []).length === 0 && (
+                      <p className="text-xs text-gray-400">No fabric options defined.</p>
                     )}
                   </div>
                   <div className="flex gap-2 items-center bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                     <input
                       type="text"
-                      id="color-name-input"
-                      placeholder="Color Name (e.g. Royal Blue)"
-                      className="input-modern flex-1 text-xs"
+                      id="fabric-name-input"
+                      placeholder="Fabric Name (e.g. Plush Velvet, Naples Velvet)"
+                      className="input-modern w-28 text-xs"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          const btn = document.getElementById('add-color-btn');
+                          const btn = document.getElementById('add-fabric-btn');
                           if (btn) btn.click();
                         }
                       }}
                     />
                     <input
-                      type="color"
-                      id="color-hex-input"
-                      className="w-10 h-8 border rounded-lg cursor-pointer shrink-0 p-0"
-                      defaultValue="#000000"
+                      type="number"
+                      id="fabric-price-modifier"
+                      placeholder="Price Mod (£)"
+                      className="input-modern w-28 text-xs"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const btn = document.getElementById('add-fabric-btn');
+                          if (btn) btn.click();
+                        }
+                      }}
                     />
                     <button
                       type="button"
-                      id="add-color-btn"
+                      id="add-fabric-btn"
                       onClick={() => {
-                        const nameInput = document.getElementById('color-name-input') as HTMLInputElement;
-                        const hexInput = document.getElementById('color-hex-input') as HTMLInputElement;
+                        const nameInput = document.getElementById('fabric-name-input') as HTMLInputElement;
+                        const modInput = document.getElementById('fabric-price-modifier') as HTMLInputElement;
                         if (nameInput && nameInput.value.trim()) {
                           setEditing({
                             ...editing,
-                            colors: [...(editing.colors || []), { name: nameInput.value.trim(), hex: hexInput.value }]
+                            fabrics: [...(editing.fabrics || []), { name: nameInput.value.trim(), priceModifier: parseFloat(modInput?.value) || 0 }]
                           });
                           nameInput.value = '';
+                          if (modInput) modInput.value = '';
                         } else {
-                          toast.error('Please enter a color name');
+                          toast.error('Please enter a fabric name');
                         }
                       }}
                       className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-lg transition"

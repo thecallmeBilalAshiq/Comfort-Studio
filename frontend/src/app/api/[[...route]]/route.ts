@@ -165,6 +165,7 @@ function mapProduct(p: any) {
     createdAt: p.created_at,
     galleryImages: safeParseJson(p.gallery_images || p.galleryImages, []),
     colors: safeParseJson(p.colors, []),
+    fabrics: safeParseJson(p.fabrics, []),
     sizes: safeParseJson(p.sizes, []),
     storageOptions: safeParseJson(p.storage_options || p.storageOptions, []),
     mattressOptions: safeParseJson(p.mattress_options || p.mattressOptions, [])
@@ -186,6 +187,7 @@ function mapCartItem(item: any) {
     stock: prod?.stock || 0,
     selectedSize: item.selected_size || '',
     selectedColor: item.selected_color || '',
+    selectedFabric: item.selected_fabric || '',
     selectedStorage: item.selected_storage || '',
     selectedMattress: item.selected_mattress || ''
   };
@@ -263,6 +265,7 @@ function mapOrder(o: any) {
     shippingName: o.shipping_name,
     shippingEmail: o.shipping_email,
     shippingPhone: o.shipping_phone || '',
+    shippingAddress: o.shipping_address || '',
     shippingCity: o.shipping_city,
     shippingPostalCode: o.shipping_zip || '',
     paymentScreenshot: o.payment_screenshot || '',
@@ -279,6 +282,7 @@ function mapOrder(o: any) {
       price: Number(item.price),
       selectedSize: item.selected_size || '',
       selectedColor: item.selected_color || '',
+      selectedFabric: item.selected_fabric || '',
       selectedStorage: item.selected_storage || '',
       selectedMattress: item.selected_mattress || ''
     })) || []
@@ -937,25 +941,51 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
   if (pathSegments[0] === 'cart') {
     try {
       const user = await authenticate(req);
-      const { productId, quantity, size, color, storage, mattress, price } = await req.json();
+      const { productId, quantity, size, color, fabric, selectedFabric, storage, mattress, price } = await req.json();
       if (!productId) return NextResponse.json({ error: 'Product ID required' }, { status: 400 });
 
       const selSize = size || '';
       const selColor = color || '';
+      const selFabric = fabric || selectedFabric || '';
       const selStorage = storage || '';
       const selMattress = mattress || '';
 
       // Check if product exists in cart with matching configuration
-      const { data: existing, error: findError } = await supabase
+      let hasFabricCol = true;
+      let existing = null;
+      let findError = null;
+
+      const primaryRes = await supabase
         .from('cart')
         .select('*')
         .eq('user_id', user.id)
         .eq('product_id', productId)
         .eq('selected_size', selSize)
         .eq('selected_color', selColor)
+        .eq('selected_fabric', selFabric)
         .eq('selected_storage', selStorage)
         .eq('selected_mattress', selMattress)
         .maybeSingle();
+
+      if (primaryRes.error && (primaryRes.error.message?.includes('selected_fabric') || primaryRes.error.message?.includes('does not exist') || primaryRes.error.code === 'PGRST204')) {
+        hasFabricCol = false;
+        const fallbackColor = selFabric ? (selColor ? `${selColor} (Fabric: ${selFabric})` : `Fabric: ${selFabric}`) : selColor;
+        const fallbackRes = await supabase
+          .from('cart')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('product_id', productId)
+          .eq('selected_size', selSize)
+          .eq('selected_color', fallbackColor)
+          .eq('selected_storage', selStorage)
+          .eq('selected_mattress', selMattress)
+          .maybeSingle();
+        existing = fallbackRes.data;
+        findError = fallbackRes.error;
+      } else {
+        existing = primaryRes.data;
+        findError = primaryRes.error;
+      }
 
       if (findError) throw findError;
 
@@ -967,18 +997,27 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           .eq('id', existing.id);
         if (updateError) throw updateError;
       } else {
-        const { error: insertError } = await supabase
-          .from('cart')
-          .insert({
-            user_id: user.id,
-            product_id: productId,
-            quantity: Number(quantity) || 1,
-            selected_size: selSize,
-            selected_color: selColor,
-            selected_storage: selStorage,
-            selected_mattress: selMattress,
-            price: price ? Number(price) : null
-          });
+        const insertPayload: any = {
+          user_id: user.id,
+          product_id: productId,
+          quantity: Number(quantity) || 1,
+          selected_size: selSize,
+          selected_color: hasFabricCol ? selColor : (selFabric ? (selColor ? `${selColor} (Fabric: ${selFabric})` : `Fabric: ${selFabric}`) : selColor),
+          selected_storage: selStorage,
+          selected_mattress: selMattress,
+          price: price ? Number(price) : null
+        };
+        if (hasFabricCol) {
+          insertPayload.selected_fabric = selFabric;
+        }
+
+        let { error: insertError } = await supabase.from('cart').insert(insertPayload);
+        if (insertError && (insertError.message?.includes('selected_fabric') || insertError.message?.includes('does not exist') || insertError.code === 'PGRST204')) {
+          delete insertPayload.selected_fabric;
+          insertPayload.selected_color = selFabric ? (selColor ? `${selColor} (Fabric: ${selFabric})` : `Fabric: ${selFabric}`) : selColor;
+          const retryRes = await supabase.from('cart').insert(insertPayload);
+          insertError = retryRes.error;
+        }
         if (insertError) throw insertError;
       }
 
@@ -1051,6 +1090,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
             shippingName: fullOrder.shipping_name,
             shippingEmail: fullOrder.shipping_email,
             shippingPhone: fullOrder.shipping_phone || '',
+            shippingAddress: fullOrder.shipping_address || '',
             shippingCity: fullOrder.shipping_city || '',
             shippingPostalCode: fullOrder.shipping_zip || '',
             paymentMethod: 'Bank Pay',
@@ -1063,6 +1103,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
               price: Number(item.price || 0),
               selectedSize: item.selected_size || '',
               selectedColor: item.selected_color || '',
+              selectedFabric: item.selected_fabric || '',
               selectedStorage: item.selected_storage || '',
               selectedMattress: item.selected_mattress || '',
               image: item.products?.image || ''
@@ -1144,6 +1185,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           price: itemPrice,
           selected_size: item.selectedSize || '',
           selected_color: item.selectedColor || '',
+          selected_fabric: item.selectedFabric || item.fabric || '',
           selected_storage: item.selectedStorage || '',
           selected_mattress: item.selectedMattress || ''
         });
@@ -1165,7 +1207,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           shipping_name: shipping.name || `${shipping.firstName || ''} ${shipping.lastName || ''}`.trim() || user?.name || 'Guest',
           shipping_email: shipping.email || user?.email || '',
           shipping_phone: shipping.phone || '',
-          shipping_address: '',
+          shipping_address: shipping.address || shipping.shippingAddress || shipping.streetAddress || '',
           shipping_city: shipping.city || '',
           shipping_state: '',
           shipping_zip: shipping.postalCode || shipping.zip || '',
@@ -1182,7 +1224,19 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
         order_id: newOrder.id
       }));
       
-      const { error: itemsErr } = await supabase.from('order_items').insert(itemsWithOrderId);
+      let { error: itemsErr } = await supabase.from('order_items').insert(itemsWithOrderId);
+      if (itemsErr && (itemsErr.message?.includes('selected_fabric') || itemsErr.message?.includes('does not exist') || itemsErr.code === 'PGRST204')) {
+        const fallbackItems = itemsWithOrderId.map(item => {
+          const copy = { ...item };
+          const fab = copy.selected_fabric;
+          const col = copy.selected_color;
+          delete copy.selected_fabric;
+          copy.selected_color = fab ? (col ? `${col} (Fabric: ${fab})` : `Fabric: ${fab}`) : col;
+          return copy;
+        });
+        const retryRes = await supabase.from('order_items').insert(fallbackItems);
+        itemsErr = retryRes.error;
+      }
       if (itemsErr) throw itemsErr;
 
       // Clear user cart in Supabase (only if logged in)
@@ -1206,6 +1260,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
           shippingName: finalOrder.shipping_name,
           shippingEmail: finalOrder.shipping_email,
           shippingPhone: finalOrder.shipping_phone || '',
+          shippingAddress: finalOrder.shipping_address || '',
           shippingCity: finalOrder.shipping_city || '',
           shippingPostalCode: finalOrder.shipping_zip || '',
           paymentMethod: 'Cash on Delivery',
@@ -1218,6 +1273,7 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
             price: Number(item.price || 0),
             selectedSize: item.selected_size || '',
             selectedColor: item.selected_color || '',
+            selectedFabric: item.selected_fabric || '',
             selectedStorage: item.selected_storage || '',
             selectedMattress: item.selected_mattress || '',
             image: item.products?.image || ''
@@ -1290,31 +1346,36 @@ async function handlePost(pathSegments: string[], req: NextRequest) {
 
       if (sub === 'products') {
         const prod = await req.json();
-        const { data, error } = await supabase
-          .from('products')
-          .insert({
-            name: prod.name,
-            slug: prod.slug,
-            description: prod.description || '',
-            price: Number(prod.price),
-            original_price: prod.originalPrice ? Number(prod.originalPrice) : null,
-            image: prod.image || '',
-            category_id: prod.categoryId ? Number(prod.categoryId) : null,
-            subcategory_id: prod.subcategoryId ? Number(prod.subcategoryId) : null,
-            stock: Number(prod.stock || 10),
-            rating: Number(prod.rating || 0),
-            review_count: Number(prod.reviewCount || 0),
-            badge: prod.badge || '',
-            featured: prod.featured === true,
-            gallery_images: prod.galleryImages || [],
-            colors: prod.colors || [],
-            sizes: prod.sizes || [],
-            storage_options: prod.storageOptions || [],
-            mattress_options: prod.mattressOptions || []
-          })
-          .select()
-          .single();
-          
+        const insertProductData: any = {
+          name: prod.name,
+          slug: prod.slug,
+          description: prod.description || '',
+          price: Number(prod.price),
+          original_price: prod.originalPrice ? Number(prod.originalPrice) : null,
+          image: prod.image || '',
+          category_id: prod.categoryId ? Number(prod.categoryId) : null,
+          subcategory_id: prod.subcategoryId ? Number(prod.subcategoryId) : null,
+          stock: Number(prod.stock || 10),
+          rating: Number(prod.rating || 0),
+          review_count: Number(prod.reviewCount || 0),
+          badge: prod.badge || '',
+          featured: prod.featured === true,
+          gallery_images: prod.galleryImages || [],
+          colors: prod.colors || [],
+          fabrics: prod.fabrics || [],
+          sizes: prod.sizes || [],
+          storage_options: prod.storageOptions || [],
+          mattress_options: prod.mattressOptions || []
+        };
+
+        let { data, error } = await supabase.from('products').insert(insertProductData).select().single();
+        if (error && (error.message?.includes('fabrics') || error.message?.includes('does not exist') || error.code === 'PGRST204')) {
+          delete insertProductData.fabrics;
+          const retryRes = await supabase.from('products').insert(insertProductData).select().single();
+          data = retryRes.data;
+          error = retryRes.error;
+        }
+
         if (error) throw error;
         return NextResponse.json(mapProduct(data));
       }
@@ -1475,11 +1536,17 @@ async function handlePut(pathSegments: string[], req: NextRequest) {
         if (data.featured !== undefined) mappedData.featured = data.featured === true;
         if (data.galleryImages !== undefined) mappedData.gallery_images = data.galleryImages || [];
         if (data.colors !== undefined) mappedData.colors = data.colors || [];
+        if (data.fabrics !== undefined) mappedData.fabrics = data.fabrics || [];
         if (data.sizes !== undefined) mappedData.sizes = data.sizes || [];
         if (data.storageOptions !== undefined) mappedData.storage_options = data.storageOptions || [];
         if (data.mattressOptions !== undefined) mappedData.mattress_options = data.mattressOptions || [];
 
-        const { error } = await supabase.from('products').update(mappedData).eq('id', id);
+        let { error } = await supabase.from('products').update(mappedData).eq('id', id);
+        if (error && (error.message?.includes('fabrics') || error.message?.includes('does not exist') || error.code === 'PGRST204')) {
+          delete mappedData.fabrics;
+          const retryRes = await supabase.from('products').update(mappedData).eq('id', id);
+          error = retryRes.error;
+        }
         if (error) throw error;
         return NextResponse.json({ success: true });
       }
