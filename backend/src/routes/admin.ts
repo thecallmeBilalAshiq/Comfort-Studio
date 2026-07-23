@@ -26,8 +26,8 @@ router.get('/products', (_req, res) => {
 });
 
 router.post('/products', (req, res) => {
-  const { name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, galleryImages, colors, sizes, storageOptions, mattressOptions } = req.body;
-  const result = db.prepare('INSERT INTO products (name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, gallery_images, colors, sizes, storage_options, mattress_options) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
+  const { name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, galleryImages, colors, fabrics, sizes, storageOptions, mattressOptions } = req.body;
+  const result = db.prepare('INSERT INTO products (name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, gallery_images, colors, fabrics, sizes, storage_options, mattress_options) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)').run(
     name,
     slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     description,
@@ -41,6 +41,7 @@ router.post('/products', (req, res) => {
     featured ? 1 : 0,
     galleryImages ? JSON.stringify(galleryImages) : '[]',
     colors ? JSON.stringify(colors) : '[]',
+    fabrics ? JSON.stringify(fabrics) : '[]',
     sizes ? JSON.stringify(sizes) : '[]',
     storageOptions ? JSON.stringify(storageOptions) : '[]',
     mattressOptions ? JSON.stringify(mattressOptions) : '[]'
@@ -49,8 +50,8 @@ router.post('/products', (req, res) => {
 });
 
 router.put('/products/:id', (req, res) => {
-  const { name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, galleryImages, colors, sizes, storageOptions, mattressOptions } = req.body;
-  db.prepare('UPDATE products SET name=?, slug=?, description=?, price=?, originalPrice=?, image=?, categoryId=?, subcategoryId=?, stock=?, badge=?, featured=?, gallery_images=?, colors=?, sizes=?, storage_options=?, mattress_options=? WHERE id=?').run(
+  const { name, slug, description, price, originalPrice, image, categoryId, subcategoryId, stock, badge, featured, galleryImages, colors, fabrics, sizes, storageOptions, mattressOptions } = req.body;
+  db.prepare('UPDATE products SET name=?, slug=?, description=?, price=?, originalPrice=?, image=?, categoryId=?, subcategoryId=?, stock=?, badge=?, featured=?, gallery_images=?, colors=?, fabrics=?, sizes=?, storage_options=?, mattress_options=? WHERE id=?').run(
     name,
     slug,
     description,
@@ -64,6 +65,7 @@ router.put('/products/:id', (req, res) => {
     featured ? 1 : 0,
     galleryImages ? JSON.stringify(galleryImages) : '[]',
     colors ? JSON.stringify(colors) : '[]',
+    fabrics ? JSON.stringify(fabrics) : '[]',
     sizes ? JSON.stringify(sizes) : '[]',
     storageOptions ? JSON.stringify(storageOptions) : '[]',
     mattressOptions ? JSON.stringify(mattressOptions) : '[]',
@@ -92,9 +94,9 @@ router.post('/categories', (req, res) => {
   const result = db.prepare('INSERT INTO categories (name, slug, image) VALUES (?, ?, ?)').run(name, slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), image || '');
   const catId = result.lastInsertRowid;
   if (subcategories && subcategories.length) {
-    const insert = db.prepare('INSERT INTO subcategories (categoryId, name, slug) VALUES (?, ?, ?)');
+    const insert = db.prepare('INSERT INTO subcategories (categoryId, name, slug, image) VALUES (?, ?, ?, ?)');
     for (const sub of subcategories) {
-      insert.run(catId, sub.name, sub.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+      insert.run(catId, sub.name, sub.slug || sub.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), sub.image || '');
     }
   }
   res.json({ id: catId });
@@ -105,9 +107,9 @@ router.put('/categories/:id', (req, res) => {
   db.prepare('UPDATE categories SET name=?, slug=?, image=? WHERE id=?').run(name, slug, image, req.params.id);
   db.prepare('DELETE FROM subcategories WHERE categoryId = ?').run(req.params.id);
   if (subcategories && subcategories.length) {
-    const insert = db.prepare('INSERT INTO subcategories (categoryId, name, slug) VALUES (?, ?, ?)');
+    const insert = db.prepare('INSERT INTO subcategories (categoryId, name, slug, image) VALUES (?, ?, ?, ?)');
     for (const sub of subcategories) {
-      insert.run(req.params.id, sub.name, sub.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
+      insert.run(req.params.id, sub.name, sub.slug || sub.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'), sub.image || '');
     }
   }
   res.json({ success: true });
@@ -130,7 +132,7 @@ router.get('/orders', (_req, res) => {
 router.post('/orders', (req, res) => {
   try {
     const { 
-      customerName, customerEmail, customerPhone, 
+      customerName, customerEmail, customerPhone, shippingAddress, address,
       shippingCity, shippingPostalCode, shippingZip, 
       items, status 
     } = req.body;
@@ -164,7 +166,7 @@ router.post('/orders', (req, res) => {
     `).run(
       userId, orderNumber, total, 0, status || 'pending',
       customerName, customerEmail, customerPhone || '',
-      '', shippingCity || '', '', shippingPostalCode || shippingZip || '', ''
+      shippingAddress || address || '', shippingCity || '', '', shippingPostalCode || shippingZip || '', ''
     );
 
     const orderId = orderResult.lastInsertRowid;

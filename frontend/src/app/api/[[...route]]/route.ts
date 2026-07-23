@@ -521,6 +521,12 @@ async function handleGet(pathSegments: string[], req: NextRequest) {
         categoriesData = cats.map((c: any) => {
           const mappedCat = mapCategory(c) as any;
           mappedCat.productCount = countMap[c.id] || 0;
+          const mockCat = mockCatalog.find(m => m.slug.toLowerCase() === c.slug.toLowerCase());
+          if (mockCat && mockCat.subcategories && mockCat.subcategories.length > 0) {
+            if (!mappedCat.subcategories || mappedCat.subcategories.length === 0 || c.slug === 'beds' || c.slug === 'Beds') {
+              mappedCat.subcategories = mockCat.subcategories;
+            }
+          }
           return mappedCat;
         });
       } else {

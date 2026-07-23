@@ -110,7 +110,7 @@ export default function CheckoutPage() {
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Complete Address *</label>
-                <input required type="text" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="e.g. Muslim town, house no. 9" className="input-modern" />
+                <input required type="text" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} placeholder="" className="input-modern" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>

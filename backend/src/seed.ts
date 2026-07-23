@@ -14,6 +14,7 @@ async function seed() {
 
   // Seed categories
   const categories = [
+    { name: 'Beds', slug: 'beds', image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=600&h=400&fit=crop', subs: ['Diwaan Bed', 'Kamal Beds', 'Super Beds', 'Nice Beds'] },
     { name: 'Sofas', slug: 'sofas', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=600&h=400&fit=crop', subs: ['Sectional Sofas', 'Sleeper Sofas', 'Loveseats', 'Chesterfield', 'Reclining Sofas'] },
     { name: 'Living Room', slug: 'living-room', image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&h=400&fit=crop', subs: ['Coffee Tables', 'TV Stands', 'Bookshelves', 'Accent Chairs', 'Side Tables'] },
     { name: 'Dining Room', slug: 'dining-room', image: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?w=600&h=400&fit=crop', subs: ['Dining Tables', 'Dining Chairs', 'Buffets & Sideboards', 'Bar Stools', 'Dining Sets'] },

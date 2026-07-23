@@ -11,9 +11,10 @@ import { FadeIn, ScaleIn } from '@/components/ScrollAnimations';
 // Curated high-res fallback cover images for subcategories
 const SUBCATEGORY_IMAGES: Record<string, string> = {
   // Beds
-  'ottoman-beds': 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=700&auto=format&fit=crop&q=80',
-  'wooden-beds': 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=700&auto=format&fit=crop&q=80',
-  'sleigh-beds': 'https://images.unsplash.com/photo-1540518614846-7ede433c51f3?w=700&auto=format&fit=crop&q=80',
+  'diwan': 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=700&auto=format&fit=crop&q=80',
+  'kamal': 'https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=700&auto=format&fit=crop&q=80',
+  'super': 'https://images.unsplash.com/photo-1540518614846-7ede433c51f3?w=700&auto=format&fit=crop&q=80',
+  'nice': 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=700&auto=format&fit=crop&q=80',
   // Sofas
   'corner-sofas': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=700&auto=format&fit=crop&q=80',
   '3-seater-sofas': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=700&auto=format&fit=crop&q=80',

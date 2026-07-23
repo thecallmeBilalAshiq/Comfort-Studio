@@ -7,25 +7,32 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { api } from '@/lib/api';
 import { Category } from '@/types';
+import { mockCatalog } from '@/data/mockCatalog';
 
 export default function Header() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { count } = useCart();
   const pathname = usePathname();
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(mockCatalog as any);
   const [menuOpen, setMenuOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
-  const [mobileCatExpanded, setMobileCatExpanded] = useState<number | null>(null);
+  const [mobileCatExpanded, setMobileCatExpanded] = useState<number | null>(5); // Default expand Beds (id 5)
+  const [expandedCatId, setExpandedCatId] = useState<number | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const catMenuRef = useRef<HTMLDivElement>(null);
   const catTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    api.getCategories().then(setCategories).catch(() => {});
+    api.getCategories().then(cats => {
+      if (cats && cats.length > 0) {
+        setCategories(cats);
+      }
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -37,6 +44,7 @@ export default function Header() {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) setUserMenuOpen(false);
+      if (catMenuRef.current && !catMenuRef.current.contains(e.target as Node)) setCatOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -58,7 +66,8 @@ export default function Header() {
     setCatOpen(true);
   };
   const handleCatLeave = () => {
-    catTimeoutRef.current = setTimeout(() => setCatOpen(false), 200);
+    if (catTimeoutRef.current) clearTimeout(catTimeoutRef.current);
+    catTimeoutRef.current = setTimeout(() => setCatOpen(false), 400);
   };
 
   const closeMobileMenu = () => setMenuOpen(false);
@@ -115,30 +124,85 @@ export default function Header() {
 
             <nav className="hidden lg:flex items-center gap-1">
               <Link href="/" className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${pathname === '/' ? 'text-accent bg-accent/10' : 'text-brand hover:text-accent hover:bg-accent/5'}`}>Home</Link>
-              <div className="relative" onMouseEnter={handleCatEnter} onMouseLeave={handleCatLeave}>
-                <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold text-brand hover:text-accent hover:bg-accent/5 transition-all duration-300">
+              <div ref={catMenuRef} className="relative" onMouseEnter={handleCatEnter} onMouseLeave={handleCatLeave}>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCatOpen(prev => !prev);
+                  }}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all duration-300 ${catOpen ? 'text-accent bg-accent/10' : 'text-brand hover:text-accent hover:bg-accent/5'}`}
+                >
                   Shop <ChevronDown size={14} className={`transition-transform duration-300 ${catOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {catOpen && (
-                  <div className="absolute top-full left-0 pt-3">
-                    <div className="bg-white rounded-2xl shadow-2xl shadow-black/10 border border-gray-100 p-3 min-w-[260px]">
-                      <Link href="/shop" className="block px-4 py-2.5 text-sm font-medium text-brand hover:bg-accent/10 hover:text-accent rounded-xl transition-all">All Products</Link>
-                      {categories.map(cat => (
-                        <div key={cat.id}>
-                          <Link href={`/category/${cat.slug}`} className="block px-4 py-2.5 text-sm text-brand hover:bg-accent/10 hover:text-accent rounded-xl transition-all font-bold">
-                            {cat.name}
-                          </Link>
-                          {Boolean(cat.subcategories && cat.subcategories.length > 0) && (
-                            <div className="ml-4 mb-1">
-                              {cat.subcategories!.map(sub => (
-                                <Link key={sub.id} href={`/category/${cat.slug}?sub=${sub.slug}`} className="block px-4 py-1.5 text-xs text-gray-600 hover:text-accent transition-all font-medium">
-                                  {sub.name}
+                  <div className="absolute top-full left-0 pt-1.5 z-[100]">
+                    <div className="bg-white rounded-2xl shadow-2xl shadow-black/20 border border-gray-100 p-3 min-w-[290px] max-h-[80vh] overflow-y-auto">
+                      <Link 
+                        href="/shop" 
+                        onClick={() => setCatOpen(false)}
+                        className="flex items-center justify-between px-4 py-2.5 text-sm font-bold text-brand hover:bg-accent/10 hover:text-accent rounded-xl transition-all border-b border-gray-100 mb-2"
+                      >
+                        <span>All Products</span>
+                        <span className="text-xs text-accent font-semibold">&rarr;</span>
+                      </Link>
+                      {categories.map(cat => {
+                        const hasSubs = Boolean(cat.subcategories && cat.subcategories.length > 0);
+                        const isExpanded = expandedCatId === cat.id || (expandedCatId === null && (cat.slug === 'beds' || cat.name === 'Beds'));
+                        
+                        return (
+                          <div key={cat.id || cat.slug} className="mb-1 rounded-xl transition-all">
+                            {/* Category Header Row - CLICKING EXPANDS SUBCATEGORIES DROPDOWN */}
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (hasSubs) {
+                                  setExpandedCatId(prev => prev === cat.id ? -1 : cat.id);
+                                } else {
+                                  router.push(`/category/${cat.slug}`);
+                                  setCatOpen(false);
+                                }
+                              }}
+                              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl cursor-pointer font-bold text-sm text-left transition-all ${
+                                isExpanded ? 'bg-accent/10 text-accent' : 'text-brand hover:bg-gray-100 hover:text-accent'
+                              }`}
+                            >
+                              <span>{cat.name}</span>
+
+                              {hasSubs && (
+                                <ChevronDown 
+                                  size={16} 
+                                  className={`transition-transform duration-200 ${isExpanded ? 'rotate-180 text-accent font-bold' : 'text-gray-400'}`} 
+                                />
+                              )}
+                            </button>
+
+                            {/* Subcategories Dropdown List */}
+                            {hasSubs && isExpanded && (
+                              <div className="ml-3 pl-3 border-l-2 border-accent/40 my-1 py-1 space-y-1 bg-accent/5 rounded-r-xl">
+                                {cat.subcategories!.map(sub => (
+                                  <Link 
+                                    key={sub.id || sub.slug} 
+                                    href={`/category/${cat.slug}?sub=${sub.slug}`}
+                                    onClick={() => setCatOpen(false)}
+                                    className="flex items-center gap-2 px-3 py-2 text-xs text-gray-700 hover:text-accent hover:bg-white rounded-lg transition-all font-semibold"
+                                  >
+                                    <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0"></span>
+                                    <span>{sub.name}</span>
+                                  </Link>
+                                ))}
+                                <Link 
+                                  href={`/category/${cat.slug}`}
+                                  onClick={() => setCatOpen(false)}
+                                  className="block px-3 py-1.5 text-[11px] text-accent font-bold hover:underline"
+                                >
+                                  Browse All {cat.name} &rarr;
                                 </Link>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -211,25 +275,39 @@ export default function Header() {
                 <Link href="/shop" onClick={closeMobileMenu} className="block py-2.5 px-3 text-sm font-bold rounded-xl hover:bg-accent/5 hover:text-accent transition">Shop</Link>
                 <Link href="/shop?badge=best-seller" onClick={closeMobileMenu} className="block py-2.5 px-3 text-sm font-bold rounded-xl hover:bg-accent/5 hover:text-accent transition">Best Sellers</Link>
                 <Link href="/contact" onClick={closeMobileMenu} className="block py-2.5 px-3 text-sm font-bold rounded-xl hover:bg-accent/5 hover:text-accent transition">Contact</Link>
-                {categories.map(cat => (
-                  <div key={cat.id}>
-                    <div className="flex items-center">
-                      <Link href={`/category/${cat.slug}`} onClick={closeMobileMenu} className="flex-1 py-2.5 px-3 text-sm text-brand rounded-xl hover:bg-accent/5 hover:text-accent font-bold transition">{cat.name}</Link>
-                      {Boolean(cat.subcategories && cat.subcategories.length > 0) && (
-                        <button onClick={() => toggleMobileCat(cat.id)} className="p-2 mr-1 hover:bg-gray-100 rounded-lg transition">
-                          <ChevronDown size={16} className={`transition-transform duration-200 ${mobileCatExpanded === cat.id ? 'rotate-180' : ''}`} />
-                        </button>
+                {categories.map(cat => {
+                  const hasSubs = Boolean(cat.subcategories && cat.subcategories.length > 0);
+                  const isExpanded = mobileCatExpanded === cat.id;
+                  return (
+                    <div key={cat.id || cat.slug}>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          if (hasSubs) {
+                            toggleMobileCat(cat.id);
+                          } else {
+                            router.push(`/category/${cat.slug}`);
+                            closeMobileMenu();
+                          }
+                        }}
+                        className="w-full flex items-center justify-between py-2.5 px-3 text-sm text-brand rounded-xl hover:bg-accent/5 hover:text-accent font-bold text-left transition"
+                      >
+                        <span>{cat.name}</span>
+                        {hasSubs && (
+                          <ChevronDown size={16} className={`transition-transform duration-200 ${isExpanded ? 'rotate-180 text-accent' : 'text-gray-400'}`} />
+                        )}
+                      </button>
+                      {hasSubs && isExpanded && (
+                        <div className="ml-4 mb-2 pl-3 border-l-2 border-accent/40 space-y-1">
+                          {cat.subcategories!.map(sub => (
+                            <Link key={sub.id || sub.slug} href={`/category/${cat.slug}?sub=${sub.slug}`} onClick={closeMobileMenu} className="block py-2 px-4 text-xs text-gray-700 hover:text-accent hover:bg-accent/5 rounded-lg font-semibold transition">{sub.name}</Link>
+                          ))}
+                          <Link key="all" href={`/category/${cat.slug}`} onClick={closeMobileMenu} className="block py-1.5 px-4 text-[11px] text-accent font-bold hover:underline">Browse All {cat.name} &rarr;</Link>
+                        </div>
                       )}
                     </div>
-                    {mobileCatExpanded === cat.id && Boolean(cat.subcategories && cat.subcategories.length > 0) && (
-                      <div className="ml-4 mb-1">
-                        {cat.subcategories!.map(sub => (
-                          <Link key={sub.id} href={`/category/${cat.slug}?sub=${sub.slug}`} onClick={closeMobileMenu} className="block py-2 px-4 text-sm text-gray-600 hover:text-accent hover:bg-accent/5 rounded-lg font-medium transition">{sub.name}</Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {/* Mobile Contact Section */}
               <div className="pt-4 mt-4 border-t border-gray-200 px-3 space-y-3">

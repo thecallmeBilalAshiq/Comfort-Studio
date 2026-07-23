@@ -82,9 +82,13 @@ export async function initDB() {
       categoryId INTEGER NOT NULL,
       name TEXT NOT NULL,
       slug TEXT NOT NULL,
+      image TEXT DEFAULT '',
       FOREIGN KEY (categoryId) REFERENCES categories(id) ON DELETE CASCADE
     )
   `);
+  try {
+    db.run(`ALTER TABLE subcategories ADD COLUMN image TEXT DEFAULT ''`);
+  } catch (e) {}
   db.run(`
     CREATE TABLE IF NOT EXISTS products (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -242,17 +246,20 @@ export async function initDB() {
   // Option variations migrations
   try { db.run("ALTER TABLE products ADD COLUMN gallery_images TEXT DEFAULT '[]'"); } catch {}
   try { db.run("ALTER TABLE products ADD COLUMN colors TEXT DEFAULT '[]'"); } catch {}
+  try { db.run("ALTER TABLE products ADD COLUMN fabrics TEXT DEFAULT '[]'"); } catch {}
   try { db.run("ALTER TABLE products ADD COLUMN sizes TEXT DEFAULT '[]'"); } catch {}
   try { db.run("ALTER TABLE products ADD COLUMN storage_options TEXT DEFAULT '[]'"); } catch {}
   try { db.run("ALTER TABLE products ADD COLUMN mattress_options TEXT DEFAULT '[]'"); } catch {}
 
   try { db.run("ALTER TABLE order_items ADD COLUMN selectedSize TEXT"); } catch {}
   try { db.run("ALTER TABLE order_items ADD COLUMN selectedColor TEXT"); } catch {}
+  try { db.run("ALTER TABLE order_items ADD COLUMN selectedFabric TEXT"); } catch {}
   try { db.run("ALTER TABLE order_items ADD COLUMN selectedStorage TEXT"); } catch {}
   try { db.run("ALTER TABLE order_items ADD COLUMN selectedMattress TEXT"); } catch {}
 
   try { db.run("ALTER TABLE cart ADD COLUMN selectedSize TEXT"); } catch {}
   try { db.run("ALTER TABLE cart ADD COLUMN selectedColor TEXT"); } catch {}
+  try { db.run("ALTER TABLE cart ADD COLUMN selectedFabric TEXT"); } catch {}
   try { db.run("ALTER TABLE cart ADD COLUMN selectedStorage TEXT"); } catch {}
   try { db.run("ALTER TABLE cart ADD COLUMN selectedMattress TEXT"); } catch {}
   try { db.run("ALTER TABLE cart ADD COLUMN price REAL"); } catch {}

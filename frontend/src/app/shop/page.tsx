@@ -5,12 +5,13 @@ import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Product, Category } from '@/types';
 import ProductCard from '@/components/ProductCard';
+import { mockCatalog } from '@/data/mockCatalog';
 import { Suspense } from 'react';
 
 function ShopContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<Category[]>(mockCatalog as any);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
@@ -25,7 +26,9 @@ function ShopContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    api.getCategories().then(setCategories).catch(() => {});
+    api.getCategories().then(cats => {
+      if (cats && cats.length > 0) setCategories(cats);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
